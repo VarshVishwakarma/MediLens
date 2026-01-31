@@ -1,0 +1,47 @@
+[
+  {
+    "medications": ["Lisinopril", "Ibuprofen"],
+    "severity": "Moderate",
+    "description": "NSAIDs like Ibuprofen may reduce the antihypertensive effect of ACE inhibitors like Lisinopril and increase the risk of kidney damage."
+  },
+  {
+    "medications": ["Hydrochlorothiazide", "Lisinopril"],
+    "severity": "Moderate",
+    "description": "Concurrent use may cause excessive low blood pressure (hypotension). Monitor blood pressure closely."
+  },
+  {
+    "medications": ["Atorvastatin", "Azithromycin"],
+    "severity": "Moderate",
+    "description": "Macrolide antibiotics like Azithromycin can increase the blood levels of statins, increasing the risk of muscle pain or rhabdomyolysis."
+  },
+  {
+    "medications": ["Levothyroxine", "Omeprazole"],
+    "severity": "Moderate",
+    "description": "Proton Pump Inhibitors (PPIs) like Omeprazole can reduce the absorption of Levothyroxine. Take Levothyroxine at least 4 hours apart."
+  },
+  {
+    "medications": ["Sertraline", "Ibuprofen"],
+    "severity": "Moderate",
+    "description": "Combining SSRIs (Sertraline) with NSAIDs (Ibuprofen) increases the risk of gastrointestinal bleeding."
+  },
+  {
+    "medications": ["Metformin", "Hydrochlorothiazide"],
+    "severity": "Low",
+    "description": "Thiazide diuretics can increase blood glucose levels, potentially countering the effect of Metformin. Blood sugar monitoring recommended."
+  },
+  {
+    "medications": ["Amlodipine", "Simvastatin"],
+    "severity": "Moderate",
+    "description": "Amlodipine can significantly increase exposure to Simvastatin. Limit Simvastatin dose to 20mg if taking Amlodipine."
+  },
+  {
+    "medications": ["Gabapentin", "Hydrocodone"],
+    "severity": "High",
+    "description": "Concomitant use increases the systemic exposure of Hydrocodone and risk of respiratory depression."
+  },
+  {
+    "medications": ["Albuterol", "Beta-Blockers"],
+    "severity": "Moderate",
+    "description": "Beta-blockers can inhibit the bronchodilator effect of Albuterol and may precipitate bronchospasm in asthma patients."
+  }
+]
