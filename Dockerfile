@@ -1,51 +1,66 @@
-# 1. Base Image: Lightweight Linux with Python
+# Build Timestamp: Attempt 16 - Async Boot Fix
+# 1. Base Image
 FROM python:3.10-slim
 
-# 2. System Dependencies (Install Tesseract & GL Libraries for OCR & Curl for Ollama)
+# 2. System Dependencies
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libgl1-mesa-glx \
     curl \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Setup Working Directory
+# 3. Install Ollama (Run as ROOT)
+RUN curl -fsSL https://ollama.com/install.sh | sh
+
+# 4. Setup Application Directory
 WORKDIR /app
 
-# 4. Copy Dependencies
+# 5. Copy & Install Python Dependencies
 COPY requirements.txt .
-
-# 5. Install Python Libraries
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. Copy Application Code
-COPY . .
+# 6. Create Non-Root User & Setup Permissions
+RUN useradd -m -u 1000 user
 
 # 7. Environment Variables
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata/
 ENV STREAMLIT_SERVER_PORT=7860
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
-# Hugging Face Spaces specific home directory
 ENV HOME=/home/user
-
-# 8. Create a User (Security Best Practice for HF Spaces)
-RUN useradd -m -u 1000 user
-USER user
 ENV PATH=/home/user/.local/bin:$PATH
+ENV OLLAMA_MODELS=/home/user/.ollama/models
 
-# 9. Install Ollama (Local AI Engine) inside the container
-RUN curl -fsSL https://ollama.com/install.sh | sh
+# 8. Create Model Directory & Fix Permissions
+RUN mkdir -p /home/user/.ollama/models && \
+    chown -R user:user /home/user && \
+    chmod -R 777 /home/user
 
-# 10. Create a Startup Script
-# This script starts Ollama in the background, pulls the model, and then runs Streamlit
+# 9. Copy Application Code (As User)
+COPY --chown=user . .
+
+# 10. Switch to User
+USER user
+
+# 11. Startup Script (Runtime) - ASYNC BOOT STRATEGY
+# CRITICAL FIX: We start Streamlit IMMEDIATELY so HF Health Checks pass.
+# We download the model in the background.
 RUN echo '#!/bin/bash \n\
-    ollama serve & \n\
-    echo "Waiting for Ollama to start..." \n\
-    sleep 5 \n\
-    echo "Pulling Llama 3.2 (1B) Model..." \n\
+    echo "1. Starting Ollama Server..." \n\
+    ollama serve > /dev/null 2>&1 & \n\
+    \n\
+    echo "2. Launching Background Model Download..." \n\
+    ( \n\
+    # Wait for server loop \n\
+    while ! curl -s http://localhost:11434 > /dev/null; do sleep 1; done \n\
+    echo "Ollama API Ready. Downloading Llama 3.2 (1B)..." \n\
     ollama pull llama3.2:1b \n\
-    echo "Starting MediLens Platform..." \n\
+    echo "Model Download Complete! AI is ready." \n\
+    ) & \n\
+    \n\
+    echo "3. Starting Streamlit (Immediate)..." \n\
     streamlit run web_platform.py --server.port 7860 --server.address 0.0.0.0 \n\
-    ' > start.sh && chmod +x start.sh
+    ' > /app/start.sh && chmod +x /app/start.sh
 
-# 11. Start the Container using the script
-CMD ["./start.sh"]
+# 12. Run
+CMD ["/app/start.sh"]
