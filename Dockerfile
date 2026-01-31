@@ -1,11 +1,12 @@
-# Build Timestamp: Attempt 16 - Async Boot Fix
+# Build Timestamp: Attempt 17 - Fix Dependency Name
 # 1. Base Image
 FROM python:3.10-slim
 
 # 2. System Dependencies
+# Fixed: libgl1-mesa-glx is deprecated in newer Debian versions. Using libgl1 instead.
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
-    libgl1-mesa-glx \
+    libgl1 \
     curl \
     procps \
     && rm -rf /var/lib/apt/lists/*
