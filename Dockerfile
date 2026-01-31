@@ -1,4 +1,4 @@
-# Build Timestamp: Attempt 18 - Add zstd for Ollama
+# Build Timestamp: Attempt 19 - Network Retry Fix
 # 1. Base Image
 FROM python:3.10-slim
 
@@ -12,8 +12,12 @@ RUN apt-get update && apt-get install -y \
     zstd \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Install Ollama (Run as ROOT)
-RUN curl -fsSL https://ollama.com/install.sh | sh
+# 3. Install Ollama (Run as ROOT with Retry Logic)
+# We loop up to 3 times because cloud networks can be flaky during large downloads
+RUN for i in 1 2 3; do \
+    curl -fsSL https://ollama.com/install.sh | sh && break || \
+    (echo "Download failed, retrying in 5s..." && sleep 5); \
+    done
 
 # 4. Setup Application Directory
 WORKDIR /app
