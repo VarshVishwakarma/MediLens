@@ -34,7 +34,7 @@ INTERACTION_TESTS = [
     (["Paracetamol", "Amoxicillin"], False), # Safe combination
     (["Atorvastatin", "Azithromycin"], True), # Known interaction (Moderate)
     (["Levothyroxine", "Omeprazole"], True), # Absorption issue
-    (["Cetirizine", "Loratadine"], False) # Generally safe (duplicate therapy warning maybe, but not high risk interaction in this DB)
+    (["Cetirizine", "Loratadine"], False) # Generally safe
 ]
 
 def run_evaluation():

@@ -5,7 +5,8 @@ from PIL import Image, ImageOps, ImageEnhance
 from thefuzz import fuzz
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.llms import Ollama
+# FIXED: Updated import to silence DeprecationWarning
+from langchain_ollama import OllamaLLM
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -155,8 +156,9 @@ class KnowledgeService:
     """
     def __init__(self):
         self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-        self.llm = Ollama(model=LLM_MODEL_NAME)
-        # Load Vector Store
+        # FIXED: Use OllamaLLM instead of deprecated Ollama class
+        self.llm = OllamaLLM(model=LLM_MODEL_NAME)
+        
         if os.path.exists(KB_PATH):
             self.vector_store = FAISS.load_local(KB_PATH, self.embeddings, allow_dangerous_deserialization=True)
         else:
