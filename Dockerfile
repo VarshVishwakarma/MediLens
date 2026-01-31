@@ -1,14 +1,15 @@
-# Build Timestamp: Attempt 17 - Fix Dependency Name
+# Build Timestamp: Attempt 18 - Add zstd for Ollama
 # 1. Base Image
 FROM python:3.10-slim
 
 # 2. System Dependencies
-# Fixed: libgl1-mesa-glx is deprecated in newer Debian versions. Using libgl1 instead.
+# Fixed: Added 'zstd' which is now required by the Ollama installer script
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libgl1 \
     curl \
     procps \
+    zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # 3. Install Ollama (Run as ROOT)
