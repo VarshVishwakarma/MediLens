@@ -1,9 +1,8 @@
-# Build Timestamp: Attempt 19 - Network Retry Fix
+# Build Timestamp: Attempt 20 - Fix Write Permissions
 # 1. Base Image
 FROM python:3.10-slim
 
 # 2. System Dependencies
-# Fixed: Added 'zstd' which is now required by the Ollama installer script
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libgl1 \
@@ -12,12 +11,8 @@ RUN apt-get update && apt-get install -y \
     zstd \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Install Ollama (Run as ROOT with Retry Logic)
-# We loop up to 3 times because cloud networks can be flaky during large downloads
-RUN for i in 1 2 3; do \
-    curl -fsSL https://ollama.com/install.sh | sh && break || \
-    (echo "Download failed, retrying in 5s..." && sleep 5); \
-    done
+# 3. Install Ollama (Run as ROOT)
+RUN curl -fsSL https://ollama.com/install.sh | sh
 
 # 4. Setup Application Directory
 WORKDIR /app
@@ -45,12 +40,9 @@ RUN mkdir -p /home/user/.ollama/models && \
 # 9. Copy Application Code (As User)
 COPY --chown=user . .
 
-# 10. Switch to User
-USER user
-
-# 11. Startup Script (Runtime) - ASYNC BOOT STRATEGY
-# CRITICAL FIX: We start Streamlit IMMEDIATELY so HF Health Checks pass.
-# We download the model in the background.
+# 10. Create Startup Script (AS ROOT)
+# We create this before switching users to avoid "Permission Denied" errors.
+# We then verify ownership so the user can execute it.
 RUN echo '#!/bin/bash \n\
     echo "1. Starting Ollama Server..." \n\
     ollama serve > /dev/null 2>&1 & \n\
@@ -66,7 +58,12 @@ RUN echo '#!/bin/bash \n\
     \n\
     echo "3. Starting Streamlit (Immediate)..." \n\
     streamlit run web_platform.py --server.port 7860 --server.address 0.0.0.0 \n\
-    ' > /app/start.sh && chmod +x /app/start.sh
+    ' > /app/start.sh && \
+    chmod +x /app/start.sh && \
+    chown user:user /app/start.sh
+
+# 11. Switch to User
+USER user
 
 # 12. Run
 CMD ["/app/start.sh"]
