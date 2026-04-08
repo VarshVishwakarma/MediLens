@@ -1,4 +1,5 @@
-# Build Timestamp: Attempt 21 - Force New Build Trigger
+# Build Timestamp: Attempt 22 - Render Stable Version
+
 # 1. Base Image
 FROM python:3.10-slim
 
@@ -11,59 +12,59 @@ RUN apt-get update && apt-get install -y \
     zstd \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Install Ollama (Run as ROOT)
+# 3. Install Ollama
 RUN curl -fsSL https://ollama.com/install.sh | sh
 
-# 4. Setup Application Directory
+# 4. Setup App Directory
 WORKDIR /app
 
-# 5. Copy & Install Python Dependencies
+# 5. Install Python Dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. Create Non-Root User & Setup Permissions
+# 6. Create User
 RUN useradd -m -u 1000 user
 
 # 7. Environment Variables
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata/
-ENV STREAMLIT_SERVER_PORT=7860
-ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 ENV HOME=/home/user
 ENV PATH=/home/user/.local/bin:$PATH
 ENV OLLAMA_MODELS=/home/user/.ollama/models
 
-# 8. Create Model Directory & Fix Permissions
-RUN mkdir -p /home/user/.ollama/models && \
-    chown -R user:user /home/user && \
-    chmod -R 777 /home/user
+# 🔥 IMPORTANT FOR RENDER
+ENV PORT=8000
 
-# 9. Copy Application Code (As User)
+# 8. Setup Permissions
+RUN mkdir -p /home/user/.ollama/models && \
+    chown -R user:user /home/user
+
+# 9. Copy Code
 COPY --chown=user . .
 
-# 10. Create Startup Script (AS ROOT)
-# We create this before switching users to avoid "Permission Denied" errors.
-# We then verify ownership so the user can execute it.
-RUN echo '#!/bin/bash \n\
-    echo "1. Starting Ollama Server..." \n\
-    ollama serve > /dev/null 2>&1 & \n\
-    \n\
-    echo "2. Launching Background Model Download..." \n\
-    ( \n\
-    # Wait for server loop \n\
-    while ! curl -s http://localhost:11434 > /dev/null; do sleep 1; done \n\
-    echo "Ollama API Ready. Downloading Llama 3.2 (1B)..." \n\
-    ollama pull llama3.2:1b \n\
-    echo "Model Download Complete! AI is ready." \n\
-    ) & \n\
-    \n\
-    echo "3. Starting Streamlit (Immediate)..." \n\
-    streamlit run web_platform.py --server.port 7860 --server.address 0.0.0.0 \n\
-    ' > /app/start.sh && \
-    chmod +x /app/start.sh && \
-    chown user:user /app/start.sh
+# 10. Create Startup Script
+RUN echo '#!/bin/bash
+echo "🚀 Starting MediLens..."
 
-# 11. Switch to User
+echo "1️⃣ Starting Ollama..."
+ollama serve > /dev/null 2>&1 &
+
+echo "2️⃣ Waiting for Ollama..."
+until curl -s http://localhost:11434 > /dev/null; do
+  sleep 1
+done
+
+echo "3️⃣ Pulling Model (Background)..."
+(ollama pull llama3.2:1b &) 
+
+echo "4️⃣ Starting Streamlit..."
+streamlit run web_platform.py --server.port $PORT --server.address 0.0.0.0
+' > /app/start.sh && chmod +x /app/start.sh
+
+# 11. Switch User
 USER user
 
-# 12. Run
+# 12. Expose Port
+EXPOSE 8000
+
+# 13. Start App
 CMD ["/app/start.sh"]
