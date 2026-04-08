@@ -1,9 +1,8 @@
-# Build Timestamp: Attempt 22 - Render Stable Version
+# Build Timestamp: Attempt 23 - Docker Parse Fix
 
-# 1. Base Image
 FROM python:3.10-slim
 
-# 2. System Dependencies
+# System Dependencies
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libgl1 \
@@ -12,37 +11,37 @@ RUN apt-get update && apt-get install -y \
     zstd \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Install Ollama
+# Install Ollama
 RUN curl -fsSL https://ollama.com/install.sh | sh
 
-# 4. Setup App Directory
+# App Directory
 WORKDIR /app
 
-# 5. Install Python Dependencies
+# Python Dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. Create User
+# Create User
 RUN useradd -m -u 1000 user
 
-# 7. Environment Variables
+# Environment
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata/
 ENV HOME=/home/user
 ENV PATH=/home/user/.local/bin:$PATH
 ENV OLLAMA_MODELS=/home/user/.ollama/models
-
-# 🔥 IMPORTANT FOR RENDER
 ENV PORT=8000
 
-# 8. Setup Permissions
+# Setup Ollama Directory
 RUN mkdir -p /home/user/.ollama/models && \
     chown -R user:user /home/user
 
-# 9. Copy Code
+# Copy Code
 COPY --chown=user . .
 
-# 10. Create Startup Script
-RUN echo '#!/bin/bash
+# ✅ FIXED START SCRIPT (IMPORTANT)
+RUN cat << 'EOF' > /app/start.sh
+#!/bin/bash
+
 echo "🚀 Starting MediLens..."
 
 echo "1️⃣ Starting Ollama..."
@@ -54,17 +53,19 @@ until curl -s http://localhost:11434 > /dev/null; do
 done
 
 echo "3️⃣ Pulling Model (Background)..."
-(ollama pull llama3.2:1b &) 
+(ollama pull llama3.2:1b &)
 
 echo "4️⃣ Starting Streamlit..."
 streamlit run web_platform.py --server.port $PORT --server.address 0.0.0.0
-' > /app/start.sh && chmod +x /app/start.sh
+EOF
 
-# 11. Switch User
+RUN chmod +x /app/start.sh
+
+# Switch User
 USER user
 
-# 12. Expose Port
+# Expose Port
 EXPOSE 8000
 
-# 13. Start App
+# Run
 CMD ["/app/start.sh"]
