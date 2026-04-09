@@ -1,8 +1,8 @@
-# Build Timestamp: Attempt 23 - Docker Parse Fix
+# Build Timestamp: Attempt 24 - Render Timeout Fix
 
 FROM python:3.10-slim
 
-# System Dependencies
+# 1. System Dependencies
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libgl1 \
@@ -11,61 +11,54 @@ RUN apt-get update && apt-get install -y \
     zstd \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Ollama
+# 2. Install Ollama
 RUN curl -fsSL https://ollama.com/install.sh | sh
 
-# App Directory
+# 3. App Directory
 WORKDIR /app
 
-# Python Dependencies
+# 4. Python Dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create User
+# 5. Create User
 RUN useradd -m -u 1000 user
 
-# Environment
+# 6. Environment
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata/
 ENV HOME=/home/user
 ENV PATH=/home/user/.local/bin:$PATH
 ENV OLLAMA_MODELS=/home/user/.ollama/models
 ENV PORT=8000
 
-# Setup Ollama Directory
+# 7. Setup Permissions
 RUN mkdir -p /home/user/.ollama/models && \
     chown -R user:user /home/user
 
-# Copy Code
+# 8. Copy Code
 COPY --chown=user . .
 
-# ✅ FIXED START SCRIPT (IMPORTANT)
-RUN cat << 'EOF' > /app/start.sh
-#!/bin/bash
-
+# 9. External Startup Script (FAST START)
+RUN echo '#!/bin/bash
 echo "🚀 Starting MediLens..."
 
-echo "1️⃣ Starting Ollama..."
+echo "1️⃣ Starting Streamlit FIRST..."
+streamlit run web_platform.py --server.port $PORT --server.address 0.0.0.0 &
+
+echo "2️⃣ Starting Ollama in background..."
 ollama serve > /dev/null 2>&1 &
 
-echo "2️⃣ Waiting for Ollama..."
-until curl -s http://localhost:11434 > /dev/null; do
-  sleep 1
-done
-
-echo "3️⃣ Pulling Model (Background)..."
-(ollama pull llama3.2:1b &)
-
-echo "4️⃣ Starting Streamlit..."
-streamlit run web_platform.py --server.port $PORT --server.address 0.0.0.0
-EOF
+echo "3️⃣ System initialized"
+wait
+' > /app/start.sh
 
 RUN chmod +x /app/start.sh
 
-# Switch User
+# 10. Switch User
 USER user
 
-# Expose Port
+# 11. Expose Port
 EXPOSE 8000
 
-# Run
+# 12. Start App
 CMD ["/app/start.sh"]
