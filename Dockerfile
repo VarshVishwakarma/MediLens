@@ -1,66 +1,67 @@
-# Build Timestamp: Attempt 25 - FINAL Render Fix
-
+# Build Timestamp: Attempt 26 - Optimized & Fixed Shell Logic
 FROM python:3.10-slim
 
 # 1. System Dependencies
+# Optimized to include common dependencies and cleanup in one layer
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
-    libgl1 \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
     curl \
     procps \
     zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Install Ollama
+# Installed early as it changes less frequently than app code
 RUN curl -fsSL https://ollama.com/install.sh | sh
 
-# 3. App Directory
+# 3. Setup User and App Directory
+RUN useradd -m -u 1000 user
 WORKDIR /app
 
-# 4. Python Dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 5. Create User
-RUN useradd -m -u 1000 user
-
-# 6. Environment
-ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata/
+# 4. Environment Variables
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
 ENV HOME=/home/user
 ENV PATH=/home/user/.local/bin:$PATH
 ENV OLLAMA_MODELS=/home/user/.ollama/models
 ENV PORT=8000
+ENV PYTHONUNBUFFERED=1
 
-# 7. Setup Permissions
+# 5. Setup Permissions for Ollama
 RUN mkdir -p /home/user/.ollama/models && \
-    chown -R user:user /home/user
+    chown -R user:user /home/user && \
+    chown -R user:user /app
 
-# 8. Copy Code
-COPY --chown=user . .
+# 6. Python Dependencies
+# Copy only requirements first to leverage Docker cache
+COPY --chown=user:user requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 9. ✅ SAFE START SCRIPT (NO PARSE ERROR)
-RUN cat <<EOF > /app/start.sh
-#!/bin/bash
+# 7. Copy Application Code
+COPY --chown=user:user . .
 
-echo "🚀 Starting MediLens..."
+# 8. Create Entrypoint Script
+# Using a more robust method to create the start script
+RUN printf "#!/bin/bash\n\
+echo '🚀 Starting MediLens Services...'\n\
+\n\
+echo '1️⃣ Starting Ollama in background...'\n\
+ollama serve > /home/user/ollama.log 2>&1 &\n\
+\n\
+# Wait a few seconds for Ollama to initialize\n\
+sleep 5\n\
+\n\
+echo '2️⃣ Starting Streamlit (Main Process)...'\n\
+exec streamlit run web_platform.py --server.port \$PORT --server.address 0.0.0.0\n" > /app/start.sh
 
-echo "1️⃣ Starting Streamlit FIRST..."
-streamlit run web_platform.py --server.port \$PORT --server.address 0.0.0.0 &
+RUN chmod +x /app/start.sh && chown user:user /app/start.sh
 
-echo "2️⃣ Starting Ollama in background..."
-ollama serve > /dev/null 2>&1 &
-
-echo "3️⃣ System initialized"
-wait
-EOF
-
-RUN chmod +x /app/start.sh
-
-# 10. Switch User
+# 9. Switch User
 USER user
 
-# 11. Expose Port
+# 10. Expose Port
 EXPOSE 8000
 
-# 12. Start App
+# 11. Start App
 CMD ["/app/start.sh"]
