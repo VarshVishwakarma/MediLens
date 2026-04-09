@@ -152,81 +152,110 @@ class IdentificationService:
 
 class KnowledgeService:
     """
-    RAG Pipeline with Failure Modes for missing data.
+    RAG Pipeline with SAFE NON-BLOCKING initialization.
     """
+
     def __init__(self):
-        self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-        # FIXED: Use OllamaLLM instead of deprecated Ollama class
-        self.llm = OllamaLLM(model=LLM_MODEL_NAME)
-        
-        if os.path.exists(KB_PATH):
-            self.vector_store = FAISS.load_local(KB_PATH, self.embeddings, allow_dangerous_deserialization=True)
+        print("🔥 Initializing KnowledgeService")
+
+        # --- Embeddings ---
+        try:
+            print("📦 Loading embeddings...")
+            self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+            print("✅ Embeddings ready")
+        except Exception as e:
+            print("❌ Embeddings failed:", e)
+            self.embeddings = None
+
+        # --- LLM ---
+        try:
+            print("🤖 Initializing LLM...")
+            self.llm = OllamaLLM(model=LLM_MODEL_NAME)
+            print("✅ LLM ready")
+        except Exception as e:
+            print("❌ LLM failed:", e)
+            self.llm = None
+
+        # --- Vector Store ---
+        self.vector_store = None
+
+        print("📁 Checking KB path:", KB_PATH)
+
+        if os.path.exists(KB_PATH) and self.embeddings:
+            try:
+                print("📚 Loading FAISS vector store...")
+                self.vector_store = FAISS.load_local(
+                    KB_PATH,
+                    self.embeddings,
+                    allow_dangerous_deserialization=True
+                )
+                print("✅ FAISS loaded successfully")
+            except Exception as e:
+                print("❌ FAISS load failed:", e)
         else:
-            self.vector_store = None
-            print(f"⚠️ Knowledge Base not found at {KB_PATH}. Please run ingest_data.py")
+            print("⚠️ Knowledge Base not found or embeddings unavailable")
 
     def get_analysis(self, medicines: list, user_query: str = ""):
         """
-        Retrieves context and generates a safe, structured medical report.
+        Safe analysis with fallback handling.
         """
-        if not self.vector_store:
-            return "⚠️ System Error: Knowledge Base is offline. Please run ingest_data.py."
 
-        # 1. Retrieval
+        # --- SAFETY CHECKS ---
+        if not self.vector_store:
+            return "⚠️ System Error: Knowledge Base is not available."
+
+        if not self.llm:
+            return "⚠️ System Error: AI model is not available."
+
+        # --- RETRIEVAL ---
         context_docs = []
         for med in medicines:
-            # Retrieve specifically for this medicine
             docs = self.vector_store.similarity_search(med, k=2)
             context_docs.extend([d.page_content for d in docs])
-        
-        # FAILURE CHECK: Insufficient Context
-        # If the database returns nothing, we MUST refuse to answer.
+
         if not context_docs:
             return (
-                "⚠️ REFUSAL: I cannot find verifiable data for these medicines in the verified WHO database. "
-                "I cannot proceed with an analysis based on zero context."
+                "⚠️ REFUSAL: No verified data found for these medicines."
             )
 
         full_context = "\n\n".join(context_docs)
 
-        # 2. Strict Governance Prompt
+        # --- PROMPT ---
         template = """
-        SYSTEM ROLE: You are a Medical AI Assistant. 
-        MANDATE: You must ONLY use the provided Context. If information is missing, say "Data unavailable".
-        SAFETY: Do not generate prescriptions. Do not diagnose.
-        
-        CONTEXT FROM VERIFIED DATABASE:
+        SYSTEM ROLE: Medical AI Assistant
+        RULE: Use ONLY the provided context. If missing, say "Data unavailable".
+
+        CONTEXT:
         {context}
-        
-        USER QUERY: {query}
-        TARGET MEDICINES: {medicines}
-        
-        INSTRUCTIONS:
-        Provide a structured report for the target medicines.
-        Format:
+
+        QUERY:
+        {query}
+
+        MEDICINES:
+        {medicines}
+
+        FORMAT:
         ### 💊 [Medicine Name]
-        - **Uses**: ...
-        - **Dosage**: ...
-        - **How to Take**: ...
-        - **⚠️ Warnings**: ...
-        - **Source**: ...
-        
-        [If Chat Query]: Answer the specific question based on context.
+        - Uses:
+        - Dosage:
+        - How to Take:
+        - Warnings:
         """
-        
+
         prompt = PromptTemplate(
             template=template,
             input_variables=["context", "query", "medicines"]
         )
-        
-        # 3. Generation
+
         chain = prompt | self.llm | StrOutputParser()
-        response = chain.invoke({
-            "context": full_context, 
-            "query": user_query if user_query else "Provide general summary",
-            "medicines": ", ".join(medicines)
-        })
-        
-        # Note: Disclaimer injection happens in the API/Safety layer, 
-        # but the prompt reinforces the behavior.
-        return response
+
+        try:
+            response = chain.invoke({
+                "context": full_context,
+                "query": user_query if user_query else "Provide summary",
+                "medicines": ", ".join(medicines)
+            })
+            return response
+        except Exception as e:
+            print("❌ Generation failed:", e)
+            return "⚠️ Error generating response."
