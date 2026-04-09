@@ -5,7 +5,7 @@ FROM python:3.10-slim
 # Optimized to include common dependencies and cleanup in one layer
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     curl \
     procps \
