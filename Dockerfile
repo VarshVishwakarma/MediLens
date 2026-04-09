@@ -1,4 +1,4 @@
-# Build Timestamp: Attempt 24 - Render Timeout Fix
+# Build Timestamp: Attempt 25 - FINAL Render Fix
 
 FROM python:3.10-slim
 
@@ -38,19 +38,21 @@ RUN mkdir -p /home/user/.ollama/models && \
 # 8. Copy Code
 COPY --chown=user . .
 
-# 9. External Startup Script (FAST START)
-RUN echo '#!/bin/bash
+# 9. ✅ SAFE START SCRIPT (NO PARSE ERROR)
+RUN cat <<EOF > /app/start.sh
+#!/bin/bash
+
 echo "🚀 Starting MediLens..."
 
 echo "1️⃣ Starting Streamlit FIRST..."
-streamlit run web_platform.py --server.port $PORT --server.address 0.0.0.0 &
+streamlit run web_platform.py --server.port \$PORT --server.address 0.0.0.0 &
 
 echo "2️⃣ Starting Ollama in background..."
 ollama serve > /dev/null 2>&1 &
 
 echo "3️⃣ System initialized"
 wait
-' > /app/start.sh
+EOF
 
 RUN chmod +x /app/start.sh
 
