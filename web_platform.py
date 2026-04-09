@@ -31,16 +31,25 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- INITIALIZE SERVICES (Cached) ---
+# --- LAZY SERVICE INITIALIZATION (CRITICAL FIX) ---
+
 @st.cache_resource
 def load_services():
-    return OCRService(), IdentificationService(), KnowledgeService()
+    print("🔥 Lazy loading services...")
+    try:
+        ocr = OCRService()
+        ident = IdentificationService()
+        rag = KnowledgeService()
+        print("✅ Services loaded")
+        return ocr, ident, rag
+    except Exception as e:
+        print("❌ Service init failed:", e)
+        return None, None, None
 
-try:
-    ocr_engine, id_engine, rag_engine = load_services()
-except Exception as e:
-    st.error(f"Failed to initialize services: {e}")
-    st.stop()
+def get_services():
+    if "services" not in st.session_state:
+        st.session_state.services = load_services()
+    return st.session_state.services
 
 # --- SESSION STATE ---
 if 'scan_results' not in st.session_state: st.session_state.scan_results = []
@@ -62,14 +71,19 @@ def sidebar_nav():
         
         # Manual Override
         if st.checkbox("Show Manual Context Selector"):
-            all_meds = list(id_engine.known_db.values())
-            # Use set to dedup, sorted for neatness
-            unique_meds = sorted(list(set(all_meds))) if all_meds else []
-            selected = st.multiselect("Active Medicines:", unique_meds, default=st.session_state.confirmed_meds)
-            # Sync selection
-            if selected != st.session_state.confirmed_meds:
-                st.session_state.confirmed_meds = selected
-                st.rerun()
+            _, id_engine, _ = get_services()
+            
+            if not id_engine:
+                st.error("⚠️ Services not available")
+            else:
+                all_meds = list(id_engine.known_db.values())
+                # Use set to dedup, sorted for neatness
+                unique_meds = sorted(list(set(all_meds))) if all_meds else []
+                selected = st.multiselect("Active Medicines:", unique_meds, default=st.session_state.confirmed_meds)
+                # Sync selection
+                if selected != st.session_state.confirmed_meds:
+                    st.session_state.confirmed_meds = selected
+                    st.rerun()
                 
         return mode
 
@@ -87,6 +101,12 @@ def render_scan_mode():
             if st.button("🚀 Analyze Image", type="primary"):
                 with st.spinner("Running Hybrid OCR & Signal Extraction..."):
                     try:
+                        ocr_engine, id_engine, rag_engine = get_services()
+
+                        if not ocr_engine or not id_engine:
+                            st.error("⚠️ Services not available")
+                            return
+
                         # 1. Extraction
                         signals = ocr_engine.extract_signals(uploaded_file)
                         
@@ -140,13 +160,18 @@ def render_scan_mode():
             if st.button("📄 Generate Clinical Report", type="primary"):
                 with st.spinner("Retrieving verified WHO data..."):
                     try:
+                        _, _, rag_engine = get_services()
+
+                        if not rag_engine:
+                            st.error("⚠️ AI engine not available")
+                            return
+
                         report_text = rag_engine.get_analysis(st.session_state.confirmed_meds)
                         
                         # Display as a chat message for consistency
                         st.session_state.chat_history.append({"role": "ai", "content": report_text})
                         
-                        # Force switch to chat mode to see result? 
-                        # Or just render here. Let's render here.
+                        # Render here
                         st.markdown(f"<div class='report-box'>{report_text}</div>", unsafe_allow_html=True)
                         
                     except Exception as e:
@@ -181,7 +206,12 @@ def render_chat_mode():
                     response = "Please select a medicine context first."
                 else:
                     try:
-                        response = rag_engine.get_analysis(st.session_state.confirmed_meds, user_query)
+                        _, _, rag_engine = get_services()
+
+                        if not rag_engine:
+                            response = "⚠️ AI system not ready."
+                        else:
+                            response = rag_engine.get_analysis(st.session_state.confirmed_meds, user_query)
                     except Exception as e:
                         response = f"Error generating response: {str(e)}"
                 
