@@ -49,9 +49,10 @@ def get_services():
 
 
 # --- ROOT ---
-@app.get("/")
-def root():
-    return {"message": "MediLens is LIVE"}
+@app.get("/", response_class=HTMLResponse)
+def home():
+    with open("index.html", "r") as f:
+        return f.read()
 
 
 # --- HEALTH ---
@@ -63,7 +64,7 @@ def health():
 # --- MAIN SCAN ---
 @app.post("/scan")
 async def scan(file: UploadFile = File(...)):
-    temp_path = f"temp_{file.filename}"
+    temp_path = os.path.join("/tmp", f"temp_{file.filename}")
 
     try:
         print("🔥 /scan endpoint hit")
@@ -81,8 +82,8 @@ async def scan(file: UploadFile = File(...)):
             )
 
         # 2. Save file
-        with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        with open(temp_file, "wb") as buffer:
+            buffer.write(await file.read())
 
         print("📁 File saved")
 
