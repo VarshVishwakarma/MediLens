@@ -41,4 +41,4 @@ EXPOSE $PORT
 # 11. Run FastAPI via Uvicorn
 # Using sh -c allows platforms like Render to inject their own dynamic $PORT if necessary, 
 # while defaulting to 8000 for local development.
-CMD ["sh", "-c", "uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "8000"]
