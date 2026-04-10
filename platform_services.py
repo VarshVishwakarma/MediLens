@@ -3,7 +3,7 @@ import json
 import re
 import string
 import pytesseract
-from src.platform_services import load_services
+from platform_services import load_services
 from PIL import Image, ImageOps, ImageEnhance
 from thefuzz import fuzz
 
