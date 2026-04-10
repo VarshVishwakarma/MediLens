@@ -159,3 +159,11 @@ def load_services() -> dict:
             "ocr": None,
             "id": None
         }
+
+def load_services():
+    print("🚀 Loading services...")
+
+    return {
+        "ocr": OCRService(),
+        "id": IdentificationService()
+    }
