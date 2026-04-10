@@ -1,167 +1,129 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import JSONResponse
 import shutil
 import os
-import uvicorn
 import sys
+import uvicorn
 
 # Ensure we can import from src
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from src.platform_services import OCRService, IdentificationService, KnowledgeService # type: ignore
-    from src.safety import SafetyGuard # type: ignore
+    from src.platform_services import load_services
 except ImportError:
-    print("⚠️  Warning: src modules not found. Ensure structure is correct.")
-    class OCRService: pass
-    class IdentificationService: pass
-    class KnowledgeService: pass
-    class SafetyGuard: 
-        def __init__(self, p): pass
+    print("[ERROR] Cannot import load_services from src.platform_services")
+    def load_services():
+        return {"ocr": None, "id": None}
 
 app = FastAPI(title="MediLens AI Platform API", version="2.0.0")
 
-# --- INITIALIZATION ---
-ocr_service = None
-id_service = None
-knowledge_service = None
-safety_guard = None
+# --- LAZY LOADING SERVICES ---
+services = None
+llm = None
 
-@app.on_event("startup")
-async def startup_event():
-    global ocr_service, id_service, knowledge_service, safety_guard
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DATA_PATH = os.path.join(BASE_DIR, "data")
-    
-    print("🚀 Initializing MediLens Services...")
-    ocr_service = OCRService()
-    id_service = IdentificationService()
-    knowledge_service = KnowledgeService()
-    safety_guard = SafetyGuard(DATA_PATH)
-    print("✅ Services Ready.")
-
-# --- MODELS ---
-class MedicineCandidate(BaseModel):
-    name: str
-    score: int
-
-class OCRResponse(BaseModel):
-    raw_text: str
-    signals: Dict[str, Any]
-    candidates: List[MedicineCandidate]
-
-class AnalyzeRequest(BaseModel):
-    medicines: List[str]
-    acknowledge_risk: bool = False # Explicit user override for high risk
-
-class ChatRequest(BaseModel):
-    medicines: List[str]
-    query: str
-
-class ReportResponse(BaseModel):
-    report: str
-    disclaimer: str
-    safety_status: str
-    warnings: List[Dict[str, Any]]
+def get_services():
+    """Lazily loads heavy ML services only when the first request is made."""
+    global services, llm
+    if services is None:
+        print("[INFO] Lazy loading core services...")
+        services = load_services()
+        
+        # Safely load the LLM service to avoid deployment timeouts
+        try:
+            from src.llm_service import LLMService
+            llm = LLMService()
+            print("[INFO] LLMService loaded successfully.")
+        except ImportError:
+            print("[WARN] LLMService module not found.")
+            llm = None
+            
+        print("[INFO] Core services loaded successfully.")
+    return services, llm
 
 # --- ENDPOINTS ---
 
 @app.get("/")
+def read_root():
+    """Root endpoint to verify service is alive immediately."""
+    return {"message": "MediLens is LIVE"}
+
+@app.get("/health")
 def health_check():
-    """Heartbeat endpoint to check if API is online."""
-    return {"status": "online", "service": "MediLens Core", "version": "2.0.0"}
+    """Health check endpoint."""
+    return {"status": "ok"}
 
-@app.post("/scan", response_model=OCRResponse)
+@app.post("/scan")
 async def scan_prescription(file: UploadFile = File(...)):
-    if not ocr_service: raise HTTPException(503, "Services offline")
-    
+    """
+    Accepts an image file upload, performs OCR, identifies medicines,
+    and fetches LLM explanations for each identified medicine.
+    """
     temp_path = f"temp_{file.filename}"
+    
     try:
-        with open(temp_path, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        print(f"[INFO] POST /scan - Received file: {file.filename}")
         
-        # 1. Extraction
-        with open(temp_path, "rb") as img_file: 
-            signals = ocr_service.extract_signals(img_file)
+        # 1. Load services (instantiates only on first call)
+        srvs, llm_service = get_services()
+        ocr_service = srvs.get("ocr")
+        id_service = srvs.get("id")
         
-        # 2. Identification (Enforces Failure Policy Threshold inside service)
-        candidates = id_service.identify(signals.get("raw_text", ""))
+        if not ocr_service or not id_service:
+            print("[ERROR] Services are not properly initialized.")
+            return JSONResponse(
+                status_code=503, 
+                content={"error": "Core extraction services are currently unavailable."}
+            )
+
+        # 2. Save uploaded file temporarily
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # 3. Perform OCR Extraction
+        print("[INFO] POST /scan - Starting OCR extraction...")
+        with open(temp_path, "rb") as img_file:
+            ocr_result = ocr_service.extract_signals(img_file)
+            
+        raw_text = ocr_result.get("raw_text", "")
+        print(f"[INFO] POST /scan - OCR completed. Extracted {len(raw_text)} characters.")
         
+        # 4. Perform Medicine Identification
+        print("[INFO] POST /scan - Starting Medicine Identification...")
+        candidates = id_service.identify(raw_text)
+        print(f"[INFO] POST /scan - Identification completed. Found {len(candidates)} matches.")
+        
+        # 5. Fetch Explanations via LLMService
+        explanations = []
+        if llm_service:
+            print("[INFO] POST /scan - Generating LLM explanations...")
+            for med in candidates:
+                explanation = llm_service.explain_medicine(med["name"])
+                explanations.append({
+                    "name": med["name"],
+                    "info": explanation
+                })
+        
+        # 6. Return structured payload
         return {
-            "raw_text": signals.get("raw_text", "")[:1000],
-            "signals": {k: v for k, v in signals.items() if k != "raw_text"},
-            "candidates": candidates
+            "medicines": candidates,
+            "explanations": explanations,
+            "text": raw_text
         }
+        
     except Exception as e:
-        raise HTTPException(500, str(e))
+        print(f"[ERROR] POST /scan - Exception occurred: {str(e)}")
+        return JSONResponse(
+            status_code=500, 
+            content={"error": f"An internal server error occurred processing the image: {str(e)}"}
+        )
+        
     finally:
-        if os.path.exists(temp_path): os.remove(temp_path)
+        # 7. Ensure temporary file cleanup
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+            print(f"[INFO] POST /scan - Cleaned up temporary file: {temp_path}")
 
-@app.post("/analyze", response_model=ReportResponse)
-async def analyze_medicines(request: AnalyzeRequest):
-    if not knowledge_service: raise HTTPException(503, "Services offline")
-    if not request.medicines: raise HTTPException(400, "No medicines provided.")
-
-    # 1. SAFETY CHECK (Interaction)
-    # This runs BEFORE the LLM to prevent unsafe generation
-    safety_report = safety_guard.check_interactions(request.medicines)
-    
-    # 2. HIGH RISK BLOCKING
-    # If the safety guard flags a block action (High Risk), we refuse to generate.
-    if safety_report["block_action"] and not request.acknowledge_risk:
-        return {
-            "report": "⚠️ ANALYSIS BLOCKED: High Risk Interaction Detected. Please review warnings.",
-            "disclaimer": safety_guard.disclaimer_text,
-            "safety_status": "blocked",
-            "warnings": safety_report["warnings"]
-        }
-
-    # 3. RAG GENERATION (Only if safe or acknowledged)
-    full_response = knowledge_service.get_analysis(request.medicines, user_query="")
-    
-    # 4. DISCLAIMER ENFORCEMENT
-    final_output = safety_guard.inject_disclaimer(full_response)
-
-    return {
-        "report": final_output,
-        "disclaimer": safety_guard.disclaimer_text,
-        "safety_status": safety_report["status"],
-        "warnings": safety_report["warnings"]
-    }
-
-@app.post("/chat", response_model=ReportResponse)
-async def chat_medical_context(request: ChatRequest):
-    """
-    Context-aware Chatbot.
-    """
-    if not knowledge_service: raise HTTPException(503, "Services offline")
-    if not request.medicines: raise HTTPException(400, "Context required.")
-
-    # 1. POLICY CHECK (Diagnosis Guardrail)
-    # Refuse if user asks for diagnosis
-    policy_violation = safety_guard.check_policy_violation(request.query)
-    if policy_violation:
-        return {
-            "report": policy_violation,
-            "disclaimer": safety_guard.disclaimer_text,
-            "safety_status": "blocked",
-            "warnings": []
-        }
-
-    # 2. RAG GENERATION
-    try:
-        full_response = knowledge_service.get_analysis(request.medicines, user_query=request.query)
-        final_output = safety_guard.inject_disclaimer(full_response)
-
-        return {
-            "report": final_output,
-            "disclaimer": safety_guard.disclaimer_text,
-            "safety_status": "safe", # Chat assumes interactions checked in Analyze step
-            "warnings": []
-        }
-    except Exception as e:
-        raise HTTPException(500, f"Chat Error: {str(e)}")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Run the server locally. In production, use `uvicorn api_server:app --host 0.0.0.0 --port 8000`
+    uvicorn.run("api_server:app", host="0.0.0.0", port=8000, reload=False)

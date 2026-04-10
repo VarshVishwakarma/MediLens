@@ -1,24 +1,6 @@
-# Frontend & API
-streamlit
 fastapi
 uvicorn
-python-multipart
-requests
-
-# Computer Vision & OCR
 pytesseract
 Pillow
-
-# AI & RAG Core
-langchain
-langchain-community
-langchain-huggingface
-langchain-core
-langchain-ollama
-sentence-transformers
-faiss-cpu
-
-# Utilities
 thefuzz
-python-dotenv
-numpy
+streamlit

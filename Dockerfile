@@ -1,67 +1,44 @@
-# Build Timestamp: Attempt 26 - Optimized & Fixed Shell Logic
+# 1. Use a lightweight Python base image
 FROM python:3.10-slim
 
-# 1. System Dependencies
-# Optimized to include common dependencies and cleanup in one layer
-RUN apt-get update && apt-get install -y \
+# 2. Set Environment Variables
+# PYTHONUNBUFFERED=1: Forces Python stdout/stderr to be unbuffered (better logging in Render/Railway)
+# PYTHONDONTWRITEBYTECODE=1: Prevents Python from writing .pyc files
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8000
+
+# 3. Install System Dependencies
+# Install tesseract-ocr and clean up the apt cache in the same layer to minimize image size
+RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     libgl1 \
-    libglib2.0-0 \
-    curl \
-    procps \
-    zstd \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Ollama
-# Installed early as it changes less frequently than app code
-RUN curl -fsSL https://ollama.com/install.sh | sh
+# 4. Create a non-root user for security best practices
+RUN useradd -m -u 1000 appuser
 
-# 3. Setup User and App Directory
-RUN useradd -m -u 1000 user
+# 5. Set Working Directory
 WORKDIR /app
 
-# 4. Environment Variables
-ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
-ENV HOME=/home/user
-ENV PATH=/home/user/.local/bin:$PATH
-ENV OLLAMA_MODELS=/home/user/.ollama/models
-ENV PORT=8000
-ENV PYTHONUNBUFFERED=1
+# 6. Copy Requirements First (Caching Layer)
+# We copy only requirements.txt first. If it hasn't changed, Docker uses the cached layer for pip install
+COPY --chown=appuser:appuser requirements.txt .
 
-# 5. Setup Permissions for Ollama
-RUN mkdir -p /home/user/.ollama/models && \
-    chown -R user:user /home/user && \
-    chown -R user:user /app
-
-# 6. Python Dependencies
-# Copy only requirements first to leverage Docker cache
-COPY --chown=user:user requirements.txt .
+# 7. Install Python Dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 7. Copy Application Code
-COPY --chown=user:user . .
+# 8. Copy Application Code
+# Copy the rest of the application files, assigning ownership to the non-root user
+COPY --chown=appuser:appuser . .
 
-# 8. Create Entrypoint Script
-# Using a more robust method to create the start script
-RUN printf "#!/bin/bash\n\
-echo '🚀 Starting MediLens Services...'\n\
-\n\
-echo '1️⃣ Starting Ollama in background...'\n\
-ollama serve > /home/user/ollama.log 2>&1 &\n\
-\n\
-# Wait a few seconds for Ollama to initialize\n\
-sleep 5\n\
-\n\
-echo '2️⃣ Starting Streamlit (Main Process)...'\n\
-exec streamlit run web_platform.py --server.port \$PORT --server.address 0.0.0.0\n" > /app/start.sh
+# 9. Switch to Non-Root User
+USER appuser
 
-RUN chmod +x /app/start.sh && chown user:user /app/start.sh
+# 10. Expose the Application Port
+EXPOSE $PORT
 
-# 9. Switch User
-USER user
-
-# 10. Expose Port
-EXPOSE 8000
-
-# 11. Start App
-CMD ["/app/start.sh"]
+# 11. Run FastAPI via Uvicorn
+# Using sh -c allows platforms like Render to inject their own dynamic $PORT if necessary, 
+# while defaulting to 8000 for local development.
+CMD ["sh", "-c", "uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-8000}"]

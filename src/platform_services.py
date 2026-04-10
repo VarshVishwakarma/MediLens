@@ -1,35 +1,16 @@
 import os
+import json
 import re
+import string
 import pytesseract
 from PIL import Image, ImageOps, ImageEnhance
 from thefuzz import fuzz
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
-# FIXED: Updated import to silence DeprecationWarning
-from langchain_ollama import OllamaLLM
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
-import json
-import string
-import sys
-
-# Import Safety Policy for Thresholds
-try:
-    from src.safety import FailurePolicy, FailureMode
-except ImportError:
-    # Fallback for standalone testing or bootstrapping
-    class FailurePolicy: MIN_ID_CONFIDENCE = 65
-    class FailureMode: pass
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-KB_PATH = os.path.join(BASE_DIR, "data", "medical_knowledge_base")
 JSON_SOURCE = os.path.join(BASE_DIR, "data", "medicines.json")
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-LLM_MODEL_NAME = "llama3.2:1b" # Memory-safe model
 
-# Windows Path Fix
+# Windows Path Fix for Tesseract
 if os.name == 'nt':
     default_paths = [
         r"C:\Program Files\Tesseract-OCR\tesseract.exe",
@@ -41,221 +22,140 @@ if os.name == 'nt':
             pytesseract.pytesseract.tesseract_cmd = p
             break
 
-class OCRService:
-    """
-    Production-grade OCR service with Hybrid Extraction.
-    """
-    @staticmethod
-    def _preprocess_for_handwriting(img):
-        """Advanced preprocessing to isolate ink from paper noise."""
-        gray = ImageOps.grayscale(img)
-        # Increase contrast to separate ink
-        enhancer = ImageEnhance.Contrast(gray)
-        contrast = enhancer.enhance(2.5)
-        # Sharpness helps with cursive edges
-        sharpener = ImageEnhance.Sharpness(contrast)
-        sharp = sharpener.enhance(2.0)
-        return sharp
 
-    def extract_signals(self, image_file):
-        """
-        Extracts both raw text and 'medical signals' (dosages, frequencies).
-        """
+class OCRService:
+    """Lightweight OCR service using pytesseract."""
+    
+    def __init__(self):
+        print("[INFO] Initializing OCRService...")
+
+    def _preprocess(self, img):
+        """Basic preprocessing: grayscale + contrast enhancement."""
+        try:
+            gray = ImageOps.grayscale(img)
+            enhancer = ImageEnhance.Contrast(gray)
+            return enhancer.enhance(2.0)
+        except Exception as e:
+            print(f"[ERROR] Preprocessing failed: {e}")
+            return img
+
+    def extract_signals(self, image_file) -> dict:
+        """Extracts raw text, dosages, and frequencies from an image."""
+        print("[INFO] Starting OCR extraction...")
         try:
             if hasattr(image_file, 'seek'):
                 image_file.seek(0)
+            
             img = Image.open(image_file)
+            processed_img = self._preprocess(img)
             
-            # Strategy 1: Standard Printed Extraction
-            text_printed = pytesseract.image_to_string(img, config=r'--oem 3 --psm 3')
+            raw_text = pytesseract.image_to_string(processed_img, config=r'--oem 3 --psm 3')
             
-            # Strategy 2: Handwriting/Signal Mode
-            # We assume handwriting is often larger/sparser or needs specific filters
-            hw_img = self._preprocess_for_handwriting(img)
-            # PSM 6 assumes a block of text, good for lists of meds
-            text_hw = pytesseract.image_to_string(hw_img, config=r'--oem 3 --psm 6')
+            # Signal Extraction RegEx
+            dosages = re.findall(r'\b\d+\s?(?:mg|ml|g|mcg)\b', raw_text, re.IGNORECASE)
+            frequencies = re.findall(r'\b(?:OD|BD|TDS|BID|QID|SOS|1-0-1|0-1-0|0-0-1)\b', raw_text, re.IGNORECASE)
             
-            combined_text = text_printed + "\n" + text_hw
-            
-            # Signal Extraction (Regex for common Rx patterns)
-            signals = {
-                "dosages": re.findall(r'\d+\s?mg|\d+\s?ml|\d+\s?g', combined_text, re.IGNORECASE),
-                "frequencies": re.findall(r'\b(?:OD|BD|TDS|BID|QID|SOS|1-0-1|0-1-0)\b', combined_text, re.IGNORECASE),
-                "raw_text": combined_text.strip()
+            print("[INFO] OCR extraction completed.")
+            return {
+                "raw_text": raw_text.strip(),
+                "dosages": list(set(dosages)),
+                "frequencies": list(set(frequencies))
             }
-            return signals
         except Exception as e:
-            return {"error": str(e), "raw_text": ""}
+            print(f"[ERROR] OCR extraction failed: {e}")
+            return {
+                "raw_text": "",
+                "dosages": [],
+                "frequencies": []
+            }
+
 
 class IdentificationService:
-    """
-    Multi-tier Medicine Matching Engine with strict Confidence Thresholds.
-    """
+    """Medicine identification engine using exact, substring, and fuzzy matching."""
+    
     def __init__(self):
+        print("[INFO] Initializing IdentificationService...")
         self.known_db = self._load_medicines()
 
-    def _load_medicines(self):
-        # Load aliases and names from JSON source for freshness
-        mapping = {} # Name/Alias -> Canonical Name
-        if os.path.exists(JSON_SOURCE):
-            try:
-                with open(JSON_SOURCE, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    for item in data.get("medicines", []):
-                        canonical = item['name']
-                        mapping[canonical.lower()] = canonical
-                        for alias in item.get('aliases', []):
-                            mapping[alias.lower()] = canonical
-            except Exception as e:
-                print(f"Error loading medicines.json: {e}")
+    def _load_medicines(self) -> dict:
+        """Safely load medicines from local JSON."""
+        mapping = {}
+        if not os.path.exists(JSON_SOURCE):
+            print(f"[WARN] Database file not found at: {JSON_SOURCE}")
+            return mapping
+            
+        try:
+            with open(JSON_SOURCE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+            for item in data.get("medicines", []):
+                canonical = item.get("name")
+                if not canonical:
+                    continue
+                    
+                mapping[canonical.lower()] = canonical
+                for alias in item.get("aliases", []):
+                    mapping[alias.lower()] = canonical
+            
+            print(f"[INFO] Loaded {len(set(mapping.values()))} unique medicines.")
+        except Exception as e:
+            print(f"[ERROR] Failed to load medicines JSON: {e}")
+            
         return mapping
 
-    def identify(self, text, threshold=None):
-        """
-        Identifies medicines from text.
-        ENFORCES FAILURE POLICY: Returns [] if score < MIN_ID_CONFIDENCE.
-        """
-        # Use Safety Policy threshold if not overridden
-        actual_threshold = threshold if threshold is not None else FailurePolicy.MIN_ID_CONFIDENCE
+    def identify(self, text: str, threshold: int = 65) -> list:
+        """Identifies medicines from text with a minimum confidence threshold."""
+        print("[INFO] Starting identification process...")
         
-        if not text: return []
-        
-        # Normalize
+        if not text or not isinstance(text, str):
+            print("[WARN] Empty or invalid text provided.")
+            return []
+
+        # Normalize text
         translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
         clean_text = text.lower().translate(translator)
         tokens = set(clean_text.split())
         
-        candidates = {} # Canonical -> Score
+        candidates = {}
 
         for key, canonical in self.known_db.items():
             score = 0
             
-            # 1. Exact Token (High Confidence)
+            # 1. Exact Token Match
             if key in tokens:
                 score = 100
-            # 2. Substring (Medium Confidence)
+            # 2. Substring Match
             elif key in clean_text:
                 score = 90
-            # 3. Fuzzy (Fallback)
+            # 3. Fuzzy Match
             else:
                 score = fuzz.partial_ratio(key, clean_text)
             
             # Enforce Threshold
-            if score >= actual_threshold:
+            if score >= threshold:
                 if canonical not in candidates or score > candidates[canonical]:
                     candidates[canonical] = score
         
-        # Convert to sorted list
         results = [{"name": k, "score": v} for k, v in candidates.items()]
         results.sort(key=lambda x: x['score'], reverse=True)
+        
+        print(f"[INFO] Identification completed. Found {len(results)} matches.")
         return results
 
-class KnowledgeService:
-    """
-    RAG Pipeline with SAFE NON-BLOCKING initialization.
-    """
 
-    def __init__(self):
-        print("🔥 Initializing KnowledgeService")
-
-        # --- Embeddings ---
-        try:
-            print("📦 Loading embeddings...")
-            self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-            print("✅ Embeddings ready")
-        except Exception as e:
-            print("❌ Embeddings failed:", e)
-            self.embeddings = None
-
-        # --- LLM ---
-        try:
-            print("🤖 Initializing LLM...")
-            self.llm = OllamaLLM(model=LLM_MODEL_NAME)
-            print("✅ LLM ready")
-        except Exception as e:
-            print("❌ LLM failed:", e)
-            self.llm = None
-
-        # --- Vector Store ---
-        self.vector_store = None
-
-        print("📁 Checking KB path:", KB_PATH)
-
-        if os.path.exists(KB_PATH) and self.embeddings:
-            try:
-                print("📚 Loading FAISS vector store...")
-                self.vector_store = FAISS.load_local(
-                    KB_PATH,
-                    self.embeddings,
-                    allow_dangerous_deserialization=True
-                )
-                print("✅ FAISS loaded successfully")
-            except Exception as e:
-                print("❌ FAISS load failed:", e)
-        else:
-            print("⚠️ Knowledge Base not found or embeddings unavailable")
-
-    def get_analysis(self, medicines: list, user_query: str = ""):
-        """
-        Safe analysis with fallback handling.
-        """
-
-        # --- SAFETY CHECKS ---
-        if not self.vector_store:
-            return "⚠️ System Error: Knowledge Base is not available."
-
-        if not self.llm:
-            return "⚠️ System Error: AI model is not available."
-
-        # --- RETRIEVAL ---
-        context_docs = []
-        for med in medicines:
-            docs = self.vector_store.similarity_search(med, k=2)
-            context_docs.extend([d.page_content for d in docs])
-
-        if not context_docs:
-            return (
-                "⚠️ REFUSAL: No verified data found for these medicines."
-            )
-
-        full_context = "\n\n".join(context_docs)
-
-        # --- PROMPT ---
-        template = """
-        SYSTEM ROLE: Medical AI Assistant
-        RULE: Use ONLY the provided context. If missing, say "Data unavailable".
-
-        CONTEXT:
-        {context}
-
-        QUERY:
-        {query}
-
-        MEDICINES:
-        {medicines}
-
-        FORMAT:
-        ### 💊 [Medicine Name]
-        - Uses:
-        - Dosage:
-        - How to Take:
-        - Warnings:
-        """
-
-        prompt = PromptTemplate(
-            template=template,
-            input_variables=["context", "query", "medicines"]
-        )
-
-        chain = prompt | self.llm | StrOutputParser()
-
-        try:
-            response = chain.invoke({
-                "context": full_context,
-                "query": user_query if user_query else "Provide summary",
-                "medicines": ", ".join(medicines)
-            })
-            return response
-        except Exception as e:
-            print("❌ Generation failed:", e)
-            return "⚠️ Error generating response."
+def load_services() -> dict:
+    """Initializes and returns the core MediLens services."""
+    print("[INFO] Loading MediLens services...")
+    try:
+        services = {
+            "ocr": OCRService(),
+            "id": IdentificationService()
+        }
+        print("[INFO] Services loaded successfully.")
+        return services
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize services: {e}")
+        return {
+            "ocr": None,
+            "id": None
+        }
