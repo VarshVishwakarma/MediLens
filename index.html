@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MediLens AI</title>
+</head>
+<body>
+    <h1>🩺 MediLens Scanner</h1>
+
+    <input type="file" id="fileInput">
+    <button onclick="upload()">Scan</button>
+
+    <pre id="result"></pre>
+
+    <script>
+        async function upload() {
+            const file = document.getElementById("fileInput").files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch("/scan", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+            document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>
