@@ -1,129 +1,131 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 import shutil
-import os
-import sys
 import uvicorn
+import os
 
-# Ensure we can import from src
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
+# ✅ SAFE IMPORT
 try:
     from src.platform_services import load_services
 except ImportError:
-    print("[ERROR] Cannot import load_services from src.platform_services")
+    print("❌ ERROR: Cannot import load_services")
+
     def load_services():
         return {"ocr": None, "id": None}
 
+
 app = FastAPI(title="MediLens AI Platform API", version="2.0.0")
 
-# --- LAZY LOADING SERVICES ---
+# --- LAZY LOADING ---
 services = None
 llm = None
 
+
 def get_services():
-    """Lazily loads heavy ML services only when the first request is made."""
     global services, llm
+
     if services is None:
-        print("[INFO] Lazy loading core services...")
+        print("🚀 Loading core services...")
         services = load_services()
-        
-        # Safely load the LLM service to avoid deployment timeouts
+
+        # ✅ SAFE LLM LOAD (OPTIONAL)
         try:
             from src.llm_service import LLMService
             llm = LLMService()
-            print("[INFO] LLMService loaded successfully.")
-        except ImportError:
-            print("[WARN] LLMService module not found.")
+            print("✅ LLM loaded")
+        except Exception as e:
+            print("⚠️ LLM not available:", str(e))
             llm = None
-            
-        print("[INFO] Core services loaded successfully.")
+
     return services, llm
 
-# --- ENDPOINTS ---
 
+# --- ROOT ---
 @app.get("/")
-def read_root():
-    """Root endpoint to verify service is alive immediately."""
+def root():
     return {"message": "MediLens is LIVE"}
 
+
+# --- HEALTH ---
 @app.get("/health")
-def health_check():
-    """Health check endpoint."""
+def health():
     return {"status": "ok"}
 
+
+# --- MAIN SCAN ---
 @app.post("/scan")
-async def scan_prescription(file: UploadFile = File(...)):
-    """
-    Accepts an image file upload, performs OCR, identifies medicines,
-    and fetches LLM explanations for each identified medicine.
-    """
+async def scan(file: UploadFile = File(...)):
     temp_path = f"temp_{file.filename}"
-    
+
     try:
-        print(f"[INFO] POST /scan - Received file: {file.filename}")
-        
-        # 1. Load services (instantiates only on first call)
+        print("🔥 /scan endpoint hit")
+
+        # 1. Load services
         srvs, llm_service = get_services()
-        ocr_service = srvs.get("ocr")
-        id_service = srvs.get("id")
-        
-        if not ocr_service or not id_service:
-            print("[ERROR] Services are not properly initialized.")
+
+        ocr = srvs.get("ocr")
+        ident = srvs.get("id")
+
+        if not ocr or not ident:
             return JSONResponse(
-                status_code=503, 
-                content={"error": "Core extraction services are currently unavailable."}
+                status_code=503,
+                content={"error": "Core services not available"}
             )
 
-        # 2. Save uploaded file temporarily
+        # 2. Save file
         with open(temp_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-            
-        # 3. Perform OCR Extraction
-        print("[INFO] POST /scan - Starting OCR extraction...")
-        with open(temp_path, "rb") as img_file:
-            ocr_result = ocr_service.extract_signals(img_file)
-            
-        raw_text = ocr_result.get("raw_text", "")
-        print(f"[INFO] POST /scan - OCR completed. Extracted {len(raw_text)} characters.")
-        
-        # 4. Perform Medicine Identification
-        print("[INFO] POST /scan - Starting Medicine Identification...")
-        candidates = id_service.identify(raw_text)
-        print(f"[INFO] POST /scan - Identification completed. Found {len(candidates)} matches.")
-        
-        # 5. Fetch Explanations via LLMService
+
+        print("📁 File saved")
+
+        # 3. OCR
+        with open(temp_path, "rb") as img:
+            result = ocr.extract_signals(img)
+
+        raw_text = result.get("raw_text", "")
+        print("🧠 OCR done")
+
+        # 4. Identification
+        meds = ident.identify(raw_text)
+        print("💊 Identification done")
+
+        # 5. LLM (OPTIONAL)
         explanations = []
+
         if llm_service:
-            print("[INFO] POST /scan - Generating LLM explanations...")
-            for med in candidates:
-                explanation = llm_service.explain_medicine(med["name"])
+            print("🤖 Generating explanations...")
+            for med in meds:
+                try:
+                    explanation = llm_service.explain_medicine(med["name"])
+                except Exception:
+                    explanation = "No explanation available"
+
                 explanations.append({
                     "name": med["name"],
                     "info": explanation
                 })
-        
-        # 6. Return structured payload
+
+        # 6. Response
         return {
-            "medicines": candidates,
+            "medicines": meds,
             "explanations": explanations,
             "text": raw_text
         }
-        
+
     except Exception as e:
-        print(f"[ERROR] POST /scan - Exception occurred: {str(e)}")
+        print("❌ ERROR:", str(e))
+
         return JSONResponse(
-            status_code=500, 
-            content={"error": f"An internal server error occurred processing the image: {str(e)}"}
+            status_code=500,
+            content={"error": str(e)}
         )
-        
+
     finally:
-        # 7. Ensure temporary file cleanup
         if os.path.exists(temp_path):
             os.remove(temp_path)
-            print(f"[INFO] POST /scan - Cleaned up temporary file: {temp_path}")
+            print("🧹 Temp file removed")
 
 
+# --- LOCAL RUN ---
 if __name__ == "__main__":
-    # Run the server locally. In production, use `uvicorn api_server:app --host 0.0.0.0 --port 8000`
-    uvicorn.run("api_server:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("api_server:app", host="0.0.0.0", port=8000)
