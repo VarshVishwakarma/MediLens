@@ -3,12 +3,20 @@ from fastapi.responses import JSONResponse
 import shutil
 import uvicorn
 import os
+import sys
+
+# ✅ FIX IMPORT PATH FOR DOCKER / RENDER
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SRC_PATH = os.path.join(BASE_DIR, "src")
+
+if SRC_PATH not in sys.path:
+    sys.path.append(SRC_PATH)
 
 # ✅ SAFE IMPORT
 try:
-    from src.platform_services import load_services
-except ImportError:
-    print("❌ ERROR: Cannot import load_services")
+    from platform_services import load_services
+except ImportError as e:
+    print("❌ CRITICAL ERROR: Cannot import load_services:", str(e))
 
     def load_services():
         return {"ocr": None, "id": None}
@@ -30,7 +38,7 @@ def get_services():
 
         # ✅ SAFE LLM LOAD (OPTIONAL)
         try:
-            from src.llm_service import LLMService
+            from llm_service import LLMService
             llm = LLMService()
             print("✅ LLM loaded")
         except Exception as e:
