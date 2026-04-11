@@ -14,6 +14,12 @@ import cv2
 import numpy as np
 import pytesseract
 from rapidfuzz import fuzz
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    with open("frontend/index.html", "r") as f:
+        return f.read()
 
 # ==============================================================================
 # CONFIGURATION & LOGGING
