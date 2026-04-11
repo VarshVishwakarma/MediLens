@@ -1,22 +1,88 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+Byte-compiled / optimized / DLL files
 
-# Virtual Env
-.venv/
+pycache/
+*.py[cod]
+*$py.class
+
+Environments & Secrets
+
+.env
+.venv
 env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# OS files
-.DS_Store
+Project specific / Temporary files
 
-# Logs
+/tmp/
+/debug_ocr/
 *.log
 
-# Large files
-*.bin
-*.gguf
+C extensions
 
-# Ollama models (IMPORTANT)
-~/.ollama/
+*.so
+
+Distribution / packaging
+
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+Installer logs
+
+pip-log.txt
+pip-delete-this-directory.txt
+
+Unit test / coverage reports
+
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+IDEs and Editors
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+OS generated files
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
