@@ -9,17 +9,11 @@ from typing import List, Dict, Any
 
 from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 import cv2
 import numpy as np
 import pytesseract
 from rapidfuzz import fuzz
-from fastapi.responses import HTMLResponse
-
-@app.get("/", response_class=HTMLResponse)
-def home():
-    with open("frontend/index.html", "r") as f:
-        return f.read()
 
 # ==============================================================================
 # CONFIGURATION & LOGGING
@@ -63,6 +57,7 @@ app.add_middleware(
 # ==============================================================================
 _medicines_db = None
 
+
 def get_medicines_db() -> Dict[str, Any]:
     """Lazy-loads the medicines.json file to avoid blocking startup."""
     global _medicines_db
@@ -96,15 +91,14 @@ def get_medicines_db() -> Dict[str, Any]:
             _medicines_db = {}
     return _medicines_db
 
+
 # ==============================================================================
 # PIPELINE FUNCTIONS
 # ==============================================================================
 def preprocess_image(img: np.ndarray) -> np.ndarray:
     """Enhances image quality before OCR to handle blur and handwriting."""
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # Upscale to improve detection of small text
     resized = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-    # Apply adaptive thresholding to handle uneven lighting
     thresh = cv2.adaptiveThreshold(
         resized, 255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -112,13 +106,14 @@ def preprocess_image(img: np.ndarray) -> np.ndarray:
     )
     return thresh
 
+
 def extract_text(image_path: str) -> str:
     """Extracts text using multi-pass Tesseract OCR for maximum accuracy."""
     try:
         img = cv2.imread(image_path)
         if img is None:
             raise ValueError("Failed to load image for OCR.")
-        
+
         texts = []
 
         # Pass 1: Raw image
@@ -132,12 +127,12 @@ def extract_text(image_path: str) -> str:
         config = "--psm 11"
         texts.append(pytesseract.image_to_string(processed, config=config))
 
-        # Combine all passes
         return "\n".join(texts).strip()
 
     except Exception as e:
         logger.error(f"OCR failure on {image_path}: {e}")
         return ""
+
 
 def detect_medicines(text: str) -> List[Dict[str, Any]]:
     """Identifies medicines using intelligent word-level fuzzy matching."""
@@ -147,30 +142,27 @@ def detect_medicines(text: str) -> List[Dict[str, Any]]:
     db = get_medicines_db()
     known_medicines = list(db.keys())
     detected_raw = []
-    
+
     text_lower = text.lower()
-    # Tokenize words for granular matching
     words = re.findall(r'\b\w+\b', text_lower)
 
     try:
         for med in known_medicines:
             best_score = 0.0
             med_lower = med.lower()
-            
+
             # 1. Word-level exact/close matching
             for word in words:
                 score = fuzz.ratio(med_lower, word)
                 if score > best_score:
                     best_score = score
-            
+
             # 2. Block-level partial matching (fallback for multi-word or compound names)
             partial_score = fuzz.partial_ratio(med_lower, text_lower)
-            
-            # Take the best matching confidence
+
             final_score = max(best_score, partial_score)
 
-            if final_score >= 80.0:  # Threshold for detection
-                # Assign UX Confidence Label
+            if final_score >= 80.0:
                 if final_score >= 90:
                     level = "High"
                 elif final_score >= 85:
@@ -184,8 +176,8 @@ def detect_medicines(text: str) -> List[Dict[str, Any]]:
                     "confidence_level": level,
                     "info": db.get(med, {})
                 })
-        
-        # Deduplication Step: Keep the instance with the highest confidence
+
+        # Deduplication: Keep the instance with the highest confidence
         unique_medicines = {}
         for med in detected_raw:
             name = med["name"]
@@ -193,8 +185,6 @@ def detect_medicines(text: str) -> List[Dict[str, Any]]:
                 unique_medicines[name] = med
 
         final_detected = list(unique_medicines.values())
-        
-        # Sort results by highest confidence first
         final_detected.sort(key=lambda x: x["confidence"], reverse=True)
         return final_detected
 
@@ -202,61 +192,61 @@ def detect_medicines(text: str) -> List[Dict[str, Any]]:
         logger.error(f"Medicine matching error: {e}")
         return []
 
+
 def generate_explanation(medicines: List[Dict[str, Any]]) -> str:
     """Generates a short, clear, and human-readable explanation."""
     try:
         if not medicines:
             return "No medicines detected. Please ensure the scan is clear and well-lit."
-        
+
         lines = ["💊 **Detected Medications:**\n"]
         for med in medicines:
             name = med.get("name", "Unknown")
             info = med.get("info", {})
             uses = info.get("uses", "N/A")
             warnings = info.get("warnings", "None")
-            
+
             lines.append(f"- **{name}**")
             lines.append(f"  • Uses: {uses}")
             lines.append(f"  • Warning: {warnings}\n")
-            
+
         lines.append("⚠️ *Always consult a healthcare professional before taking medication.*")
         return "\n".join(lines)
     except Exception as e:
         logger.error(f"Explanation generation error: {e}")
         return "Explanation could not be generated due to an internal error."
 
+
 # ==============================================================================
 # API ENDPOINTS
 # ==============================================================================
+@app.get("/", response_class=HTMLResponse)
+def home():
+    """Serves the frontend HTML."""
+    with open("frontend/index.html", "r") as f:
+        return f.read()
+
+
 @app.get("/health")
 def health_check():
     """Simple health check endpoint."""
     return {"status": "ok"}
 
-import os
-from fastapi import UploadFile, File
 
 @app.post("/scan")
 async def scan(file: UploadFile = File(...)):
     try:
-        # ✅ Step 1: temp file
         temp_file = os.path.join("/tmp", file.filename)
 
-        # ✅ Step 2: save file
         with open(temp_file, "wb") as buffer:
             buffer.write(await file.read())
 
-        # ✅ Step 3: OCR (USE YOUR FUNCTION)
         text = extract_text(temp_file)
-
-        # ✅ Step 4: medicine detection (USE YOUR FUNCTION)
         medicines = detect_medicines(text)
 
-        # ✅ Step 5: cleanup
         if os.path.exists(temp_file):
             os.remove(temp_file)
 
-        # ✅ Step 6: optional explanation
         explanation = generate_explanation(medicines)
 
         return {
@@ -268,10 +258,10 @@ async def scan(file: UploadFile = File(...)):
     except Exception as e:
         return {"error": str(e)}
 
+
 # ==============================================================================
 # RUN CONFIGURATION
 # ==============================================================================
 if __name__ == "__main__":
     import uvicorn
-    # Instant startup locally, suitable for deployment environments
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
