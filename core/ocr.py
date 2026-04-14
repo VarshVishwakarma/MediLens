@@ -5,6 +5,7 @@ import pytesseract
 import re
 import time
 import uuid
+import tempfile
 
 def compress_image(image_path):
     try:
@@ -22,10 +23,13 @@ def compress_image(image_path):
         if not filename.lower().endswith(('.jpg', '.jpeg')):
             filename += ".jpg"
             
-        # Fix 5: Prevent collision with UUID
-        temp_path = os.path.join("/tmp", f"compressed_{uuid.uuid4().hex}_{filename}")
-        cv2.imwrite(temp_path, img, [cv2.IMWRITE_JPEG_QUALITY, 50])
-        return temp_path
+        # FIX: Use Python's tempfile module to ensure cross-platform compatibility (Windows/Mac/Linux)
+        temp_dir = tempfile.gettempdir()
+        temp_path = os.path.join(temp_dir, f"compressed_{uuid.uuid4().hex}_{filename}")
+        
+        # Verify write success to prevent downstream missing-file errors
+        success = cv2.imwrite(temp_path, img, [cv2.IMWRITE_JPEG_QUALITY, 50])
+        return temp_path if success else image_path
     except Exception as e:
         print(f"Image compression failed: {e}")
         return image_path
@@ -36,45 +40,45 @@ def ocr_space(image_path):
         print("OCR.space failed: Missing OCR_SPACE_API_KEY environment variable.")
         return ""
 
-    for attempt in range(1):   # no retry
-        try:
-            with open(image_path, "rb") as image_file:
-                payload = {
-                    "apikey": api_key,
-                    "language": "eng",
-                    "OCREngine": "1",
-                    "scale": "true",
-                    "detectOrientation": "true"
-                }
-                
-                start_time = time.time()
-                
-                response = requests.post(
-                    "https://api.ocr.space/parse/image",
-                    files={"file": image_file},
-                    data=payload,
-                    timeout=6   # faster fail
-                )
-                
-            if time.time() - start_time > 8:
-                print("OCR too slow → skipping")
-                return ""
-
-            if response.status_code == 200:
-                result = response.json()
-                if not result.get("IsErroredOnProcessing"):
-                    parsed_results = result.get("ParsedResults", [])
-                    text = "\n".join([res.get("ParsedText", "") for res in parsed_results])
-                    return text.strip()
-                else:
-                    print(f"OCR.space API error (Attempt {attempt + 1}): {result.get('ErrorMessage')}")
-            else:
-                print(f"OCR.space failed (Attempt {attempt + 1}): HTTP {response.status_code}")
+    try:
+        with open(image_path, "rb") as image_file:
+            payload = {
+                "apikey": api_key,
+                "language": "eng",
+                "OCREngine": "1",
+                "scale": "true",
+                "detectOrientation": "true"
+            }
             
-            time.sleep(1)
-        except Exception as e:
-            print(f"OCR.space exception (Attempt {attempt + 1}): {e}")
-            time.sleep(1)
+            start_time = time.time()
+            
+            # FIX: Use a tuple for timeout (Connect Timeout, Read Timeout)
+            response = requests.post(
+                "https://api.ocr.space/parse/image",
+                files={"file": image_file},
+                data=payload,
+                timeout=(3.0, 6.0) 
+            )
+            
+        if time.time() - start_time > 8:
+            print("OCR too slow → skipping")
+            return ""
+
+        if response.status_code == 200:
+            result = response.json()
+            if not result.get("IsErroredOnProcessing"):
+                parsed_results = result.get("ParsedResults", [])
+                text = "\n".join([res.get("ParsedText", "") for res in parsed_results])
+                return text.strip()
+            else:
+                print(f"OCR.space API error: {result.get('ErrorMessage')}")
+        else:
+            print(f"OCR.space failed: HTTP {response.status_code}")
+            
+    except requests.exceptions.Timeout:
+        print("OCR.space API timed out.")
+    except Exception as e:
+        print(f"OCR.space exception: {e}")
 
     return ""
 
@@ -86,21 +90,28 @@ def tesseract_ocr(image_path):
             return ""
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (5, 5), 0)
-        thresh = cv2.adaptiveThreshold(
-            gray, 255,
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY, 11, 2
-        )
+        
+        # FIX: Apply a lighter blur to maintain text edge crispness
+        gray = cv2.GaussianBlur(gray, (3, 3), 0)
+        
+        # FIX: Replaced Adaptive Thresholding with Otsu's Thresholding.
+        # Otsu prevents the "speckle trap" that causes Tesseract to hang for minutes.
+        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-        text = pytesseract.image_to_string(thresh)
+        # FIX: Added a strict 10-second timeout to the underlying subprocess
+        # This guarantees Tesseract will NEVER hang your script again.
+        text = pytesseract.image_to_string(thresh, timeout=10)
         return text.strip() if text else ""
+        
+    except RuntimeError:
+        # pytesseract throws a RuntimeError when the timeout is reached
+        print("Tesseract failed: Process timed out after 10 seconds.")
+        return ""
     except Exception as e:
         print(f"Tesseract OCR exception: {e}")
         return ""
 
 def extract_text(image_path):
-    # Fix 3: API Latency Logging start
     start_time = time.time()
     
     compressed_path = compress_image(image_path)
@@ -112,10 +123,14 @@ def extract_text(image_path):
     valid_words = sum(1 for w in text.split() if len(w) > 3)
     is_confident = text and len(text) >= 10 and valid_words >= 2
 
-    # Fix 2: Early Exit Optimization
     if is_confident and len(text) > 50:
         text = re.sub(r'\s+', ' ', text).strip().lower()[:1000]
         print(f"OCR time: {time.time() - start_time:.2f}s")
+        
+        # Clean up temporary file
+        if compressed_path != image_path and os.path.exists(compressed_path):
+            os.remove(compressed_path)
+            
         return {
             "text": text,
             "source": source,
@@ -124,21 +139,17 @@ def extract_text(image_path):
 
     if not is_confident:
         print("Fallback to Tesseract")
-        # Fix 1: Pass compressed_path instead of original image_path
         text = tesseract_ocr(compressed_path)
         source = "tesseract"
 
     if text:
-        text = re.sub(r'\s+', ' ', text)
-        text = text.strip().lower()
-        text = text[:1000]
+        text = re.sub(r'\s+', ' ', text).strip().lower()[:1000]
         print(f"OCR length: {len(text)}")
 
     if not text:
         source = "none"
         confidence = "low"
     else:
-        # Fix 4: Smarter Confidence Logic
         words = text.split()
         word_count = len(words)
         valid_words = sum(1 for w in words if len(w) > 3)
@@ -152,8 +163,11 @@ def extract_text(image_path):
         else:
             confidence = "low"
 
-    # Fix 3: API Latency Logging end
     print(f"OCR time: {time.time() - start_time:.2f}s")
+
+    # Clean up temporary file
+    if compressed_path != image_path and os.path.exists(compressed_path):
+        os.remove(compressed_path)
 
     return {
         "text": text,
