@@ -5,7 +5,7 @@ import pytesseract
 import re
 import time
 import uuid
-import tempfile
+import base64
 
 def compress_image(image_path):
     try:
@@ -23,11 +23,8 @@ def compress_image(image_path):
         if not filename.lower().endswith(('.jpg', '.jpeg')):
             filename += ".jpg"
             
-        # FIX: Use Python's tempfile module to ensure cross-platform compatibility (Windows/Mac/Linux)
-        temp_dir = tempfile.gettempdir()
-        temp_path = os.path.join(temp_dir, f"compressed_{uuid.uuid4().hex}_{filename}")
+        temp_path = os.path.join("/tmp", f"compressed_{uuid.uuid4().hex}_{filename}")
         
-        # Verify write success to prevent downstream missing-file errors
         success = cv2.imwrite(temp_path, img, [cv2.IMWRITE_JPEG_QUALITY, 50])
         return temp_path if success else image_path
     except Exception as e:
@@ -42,26 +39,27 @@ def ocr_space(image_path):
 
     try:
         with open(image_path, "rb") as image_file:
-            payload = {
-                "apikey": api_key,
-                "language": "eng",
-                "OCREngine": "1",
-                "scale": "true",
-                "detectOrientation": "true"
-            }
+            base64_string = base64.b64encode(image_file.read()).decode('utf-8')
             
-            start_time = time.time()
-            
-            # FIX: Use a tuple for timeout (Connect Timeout, Read Timeout)
-            response = requests.post(
-                "https://api.ocr.space/parse/image",
-                files={"file": image_file},
-                data=payload,
-                timeout=(3.0, 6.0) 
-            )
-            
+        payload = {
+            "apikey": api_key,
+            "language": "eng",
+            "OCREngine": "1",
+            "scale": "true",
+            "detectOrientation": "true",
+            "base64Image": "data:image/jpeg;base64," + base64_string
+        }
+        
+        start_time = time.time()
+        
+        response = requests.post(
+            "https://api.ocr.space/parse/image",
+            data=payload,
+            timeout=(3, 6)
+        )
+        
         if time.time() - start_time > 8:
-            print("OCR too slow → skipping")
+            print("Force exit OCR")
             return ""
 
         if response.status_code == 200:
@@ -76,7 +74,7 @@ def ocr_space(image_path):
             print(f"OCR.space failed: HTTP {response.status_code}")
             
     except requests.exceptions.Timeout:
-        print("OCR.space API timed out.")
+        print("OCR.space timeout → skipping")
     except Exception as e:
         print(f"OCR.space exception: {e}")
 
@@ -90,21 +88,13 @@ def tesseract_ocr(image_path):
             return ""
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
-        # FIX: Apply a lighter blur to maintain text edge crispness
         gray = cv2.GaussianBlur(gray, (3, 3), 0)
-        
-        # FIX: Replaced Adaptive Thresholding with Otsu's Thresholding.
-        # Otsu prevents the "speckle trap" that causes Tesseract to hang for minutes.
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-        # FIX: Added a strict 10-second timeout to the underlying subprocess
-        # This guarantees Tesseract will NEVER hang your script again.
         text = pytesseract.image_to_string(thresh, timeout=10)
         return text.strip() if text else ""
         
     except RuntimeError:
-        # pytesseract throws a RuntimeError when the timeout is reached
         print("Tesseract failed: Process timed out after 10 seconds.")
         return ""
     except Exception as e:
@@ -127,7 +117,6 @@ def extract_text(image_path):
         text = re.sub(r'\s+', ' ', text).strip().lower()[:1000]
         print(f"OCR time: {time.time() - start_time:.2f}s")
         
-        # Clean up temporary file
         if compressed_path != image_path and os.path.exists(compressed_path):
             os.remove(compressed_path)
             
@@ -144,7 +133,6 @@ def extract_text(image_path):
 
     if text:
         text = re.sub(r'\s+', ' ', text).strip().lower()[:1000]
-        print(f"OCR length: {len(text)}")
 
     if not text:
         source = "none"
@@ -165,7 +153,6 @@ def extract_text(image_path):
 
     print(f"OCR time: {time.time() - start_time:.2f}s")
 
-    # Clean up temporary file
     if compressed_path != image_path and os.path.exists(compressed_path):
         os.remove(compressed_path)
 
