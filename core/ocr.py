@@ -14,8 +14,8 @@ def compress_image(image_path):
         
         h, w = img.shape[:2]
         max_dim = max(h, w)
-        if max_dim > 800:
-            scale = 800.0 / max_dim
+        if max_dim > 600:
+            scale = 600.0 / max_dim
             img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
         
         filename = os.path.basename(image_path)
@@ -24,7 +24,7 @@ def compress_image(image_path):
             
         # Fix 5: Prevent collision with UUID
         temp_path = os.path.join("/tmp", f"compressed_{uuid.uuid4().hex}_{filename}")
-        cv2.imwrite(temp_path, img, [cv2.IMWRITE_JPEG_QUALITY, 70])
+        cv2.imwrite(temp_path, img, [cv2.IMWRITE_JPEG_QUALITY, 50])
         return temp_path
     except Exception as e:
         print(f"Image compression failed: {e}")
@@ -36,7 +36,7 @@ def ocr_space(image_path):
         print("OCR.space failed: Missing OCR_SPACE_API_KEY environment variable.")
         return ""
 
-    for attempt in range(2):
+    for attempt in range(1):   # no retry
         try:
             with open(image_path, "rb") as image_file:
                 payload = {
@@ -46,12 +46,19 @@ def ocr_space(image_path):
                     "scale": "true",
                     "detectOrientation": "true"
                 }
+                
+                start_time = time.time()
+                
                 response = requests.post(
                     "https://api.ocr.space/parse/image",
                     files={"file": image_file},
                     data=payload,
-                    timeout=15
+                    timeout=6   # faster fail
                 )
+                
+            if time.time() - start_time > 8:
+                print("OCR too slow → skipping")
+                return ""
 
             if response.status_code == 200:
                 result = response.json()
