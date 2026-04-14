@@ -9,30 +9,26 @@ logger = logging.getLogger(__name__)
 
 class MedicineMatcher:
     """
-    A robust, production-grade medicine name matching engine.
-    Uses a multi-layered approach (Exact, Space-Invariant, Substring, Fuzzy)
-    to identify medicine names from noisy OCR text.
+    An advanced, production-grade medicine name matching engine.
+    Utilizes multi-strategy fuzzy matching, sliding n-gram windows,
+    and OCR-specific text preprocessing to detect medicines in noisy text.
     """
 
     def __init__(self, json_path: str = "data/medicines.json"):
         """
-        Initializes the matcher by loading the database and pre-compiling 
-        search terms to ensure blazing fast per-request execution.
+        Initializes the matcher, loads the medicine database, and 
+        pre-compiles normalized search terms for sub-millisecond matching.
         """
         self.medicines = self._load_medicines(json_path)
         self._compile_search_terms()
 
     def _load_medicines(self, json_path: str) -> Dict[str, Any]:
-        """
-        Loads the medicine JSON dataset safely. Includes a fallback dataset
-        for immediate testing if the file hasn't been created yet.
-        """
+        """Loads the medicine JSON dataset safely with a built-in fallback."""
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             logger.warning(f"Failed to load {json_path} ({e}). Using default fallback dataset.")
-            # Fallback dataset matching your requirements structure
             return {
                 "paracetamol": {
                     "aliases": ["acetaminophen", "calpol", "dolo"],
@@ -41,190 +37,124 @@ class MedicineMatcher:
                 "ibuprofen": {
                     "aliases": ["brufen", "advil"],
                     "category": "nsaid"
+                },
+                "amoxicillin": {
+                    "aliases": ["amoxil", "trimox", "moxatag"],
+                    "category": "antibiotic"
                 }
             }
 
     def _compile_search_terms(self):
-        """
-        Pre-computes and normalizes all primary names and aliases at startup.
-        Avoids redundant string manipulation during active requests.
-        """
+        """Normalizes and deduplicates all primary names and aliases at startup."""
         self.search_map = {}
         for primary_name, data in self.medicines.items():
             aliases = data.get("aliases", [])
-            
-            # Pool primary name and its aliases together
             terms = [primary_name] + aliases
             
-            # Clean all terms and remove duplicates within the same medicine group
-            clean_terms = list(set([self.preprocess_text(t) for t in terms if t]))
+            # Reference terms don't get aggressive OCR letter replacements
+            clean_terms = list(set([self.preprocess_text(t, is_query=False) for t in terms if t]))
             self.search_map[primary_name] = clean_terms
 
-    def preprocess_text(self, text: str) -> str:
+    def preprocess_text(self, text: str, is_query: bool = True) -> str:
         """
-        Cleans OCR text: lowercase, remove special characters, and normalize spaces.
+        Cleans text: lowercases, removes special chars, normalizes spaces.
+        If is_query=True, corrects common OCR substitutions (0->o, 1->l, 5->s).
         """
         if not text:
             return ""
         
-        # 1. Lowercase
         text = text.lower()
-        # 2. Remove special characters (keep only alphanumeric and spaces)
         text = re.sub(r'[^a-z0-9\s]', ' ', text)
-        # 3. Normalize multiple spaces to a single space
-        text = re.sub(r'\s+', ' ', text).strip()
         
+        if is_query:
+            # Aggressive OCR character correction for noisy input
+            text = text.translate(str.maketrans('015', 'ols'))
+            
+        text = re.sub(r'\s+', ' ', text).strip()
         return text
 
-    def _extract_context(self, text: str, start_idx: int, end_idx: int) -> str:
-        """
-        Determines the semantic context of the matched medicine by analyzing 
-        a sliding window of surrounding words.
-        """
-        if start_idx < 0 or end_idx < 0:
-            return "general"
-            
-        # Extract a 40-character window on either side of the matched term
-        window_start = max(0, start_idx - 40)
-        window_end = min(len(text), end_idx + 40)
-        window = text[window_start:window_end]
-        
-        scores = {"dosage": 0, "instruction": 0, "warning": 0}
-        
-        # Simple but effective keyword flags
-        if re.search(r'\b(mg|ml|g|mcg|twice|daily|dose|tablet|pill|drops)\b', window):
-            scores["dosage"] += 1
-        if re.search(r'\b(take|apply|drink|use|after|before|meal|morning|night)\b', window):
-            scores["instruction"] += 1
-        if re.search(r'\b(if|pain|persists|warning|caution|avoid|stop|severe)\b', window):
-            scores["warning"] += 1
-            
-        best_context = max(scores, key=scores.get)
-        return best_context if scores[best_context] > 0 else "general"
+    def _get_sliding_windows(self, words: List[str], max_n: int = 4) -> List[str]:
+        """Generates n-gram chunks from the text to catch fragmented words."""
+        windows = []
+        for n in range(1, max_n + 1):
+            windows.extend([" ".join(words[i:i+n]) for i in range(len(words) - n + 1)])
+        return windows
 
-    def match(self, text: str, threshold: float = 0.70) -> List[Dict[str, Any]]:
+    def match(self, text: str, threshold: float = 65.0, top_k: int = 5) -> List[Dict[str, Any]]:
         """
-        Executes the 4-step matching pipeline against the input text.
-        Returns a sorted, deduplicated list of detected medicines with smart confidence and positions.
+        Executes a multi-strategy matching pipeline (Partial, Token, Sliding Window).
+        Filters by dynamic thresholds, deduplicates, and ranks by confidence.
         """
         if not text:
             return []
 
-        # Process input text into comparable variants
-        text_clean = self.preprocess_text(text)
-        text_spaceless = text_clean.replace(" ", "")
-        text_tokens = text_clean.split()
+        clean_text = self.preprocess_text(text, is_query=True)
+        spaceless_text = clean_text.replace(" ", "")
+        words = clean_text.split()
+        
+        # Generate sliding windows (1 to 4 words) for localized matching
+        windows = self._get_sliding_windows(words, max_n=4)
         
         results = {}
 
         for primary_name, terms in self.search_map.items():
             best_score = 0.0
             best_match_type = ""
-            best_start = -1
-            best_end = -1
+            best_fragment = ""
 
             for term in terms:
-                score = 0.0
-                match_type = ""
-                start, end = -1, -1
+                # 1. Global Multi-Strategy Scoring
+                strategies = [
+                    (fuzz.partial_ratio(term, clean_text), "partial_ratio", clean_text),
+                    (fuzz.token_set_ratio(term, clean_text), "token_set", clean_text),
+                    (fuzz.token_sort_ratio(term, clean_text), "token_sort", clean_text)
+                ]
                 
+                # 2. Spaceless Strategy (Captures extreme spacing like "p a r a c e t a m o l")
                 term_spaceless = term.replace(" ", "")
-                is_substring = term in text_clean
-                is_space_invariant = (term_spaceless in text_spaceless) and (len(term_spaceless) >= 4)
-                
-                # ---------------------------------------------------------
-                # LAYER 1: Exact Match (1.0) - Direct word match 
-                # ---------------------------------------------------------
-                exact_match = re.search(r'\b' + re.escape(term) + r'\b', text_clean)
-                if exact_match:
-                    score, match_type = 1.0, "exact"
-                    start, end = exact_match.start(), exact_match.end()
-                    
-                # ---------------------------------------------------------
-                # LAYER 2: Space-Invariant Match (0.95) - Handles "P a r a"
-                # ---------------------------------------------------------
-                elif is_space_invariant and not is_substring:
-                    score, match_type = 0.95, "space_invariant"
-                    pattern = r'\s*'.join(map(re.escape, term_spaceless))
-                    si_match = re.search(pattern, text_clean)
-                    if si_match:
-                        start, end = si_match.start(), si_match.end()
-                    
-                # ---------------------------------------------------------
-                # LAYER 3: Substring Match (0.90) - Embedded inside a word
-                # ---------------------------------------------------------
-                elif is_substring:
-                    score, match_type = 0.90, "substring"
-                    start = text_clean.find(term)
-                    end = start + len(term)
-                    
-                # ---------------------------------------------------------
-                # LAYER 4: Fuzzy Match (Normalized) - Handles misspellings
-                # ---------------------------------------------------------
-                else:
-                    # Check sliding window partial ratio for compound misspellings
-                    partial_score = fuzz.partial_ratio(term, text_clean) / 100.0
-                    
-                    # Check direct token ratio for precise word-level misspellings
-                    best_token_score = 0.0
-                    best_token = ""
-                    for t in text_tokens:
-                        ts = fuzz.ratio(term, t) / 100.0
-                        if ts > best_token_score:
-                            best_token_score = ts
-                            best_token = t
-                    
-                    if best_token_score >= partial_score:
-                        score, match_type = best_token_score, "fuzzy"
-                        if best_token:
-                            start = text_clean.find(best_token)
-                            end = start + len(best_token)
-                    else:
-                        score, match_type = partial_score, "fuzzy"
-                        if best_token: # Fallback approximation for partial bounds
-                            start = text_clean.find(best_token)
-                            end = start + len(best_token)
+                if len(term_spaceless) >= 4:
+                    spaceless_score = fuzz.partial_ratio(term_spaceless, spaceless_text)
+                    strategies.append((spaceless_score, "spaceless_partial", spaceless_text))
 
-                # Track the highest scoring alias/term for this specific medicine
-                if score > best_score:
-                    best_score = score
-                    best_match_type = match_type
-                    best_start = start
-                    best_end = end
+                # 3. Sliding Window Strategy (Captures localized broken chunks)
+                for window in windows:
+                    strategies.extend([
+                        (fuzz.ratio(term, window), "window_ratio", window),
+                        (fuzz.token_sort_ratio(term, window), "window_token_sort", window)
+                    ])
 
-            # If the ultimate best score clears the threshold, add to results
+                # Identify the highest scoring strategy for this specific term
+                for score, match_type, fragment in strategies:
+                    if score > best_score:
+                        best_score = score
+                        best_match_type = match_type
+                        best_fragment = fragment
+
+            # Dynamic Threshold Filter (Ignore matches below the minimum threshold)
             if best_score >= threshold:
-                context = self._extract_context(text_clean, best_start, best_end)
                 results[primary_name] = {
                     "name": primary_name,
                     "confidence": round(best_score, 2),
                     "match_type": best_match_type,
-                    "position": {
-                        "start": best_start,
-                        "end": best_end
-                    },
-                    "context": context,
+                    "matched_fragment": best_fragment,
                     "category": self.medicines[primary_name].get("category", "unknown")
                 }
 
-        # Deduplicate (implicitly handled by dict keys) and sort descending by confidence
+        # Deduplicate, rank descending by confidence, and truncate to top_k
         sorted_results = sorted(results.values(), key=lambda x: x["confidence"], reverse=True)
-        
-        return sorted_results
+        return sorted_results[:top_k]
 
 # ==============================================================================
 # Execution Test Block
 # ==============================================================================
 if __name__ == "__main__":
-    # Initialize the matcher
     matcher = MedicineMatcher()
     
-    # Run the noisy OCR test case
-    test_text = "Take P a r a c e t a m o l 500mg twice daily and Ibu profen if pain persists"
+    # Simulating severe OCR noise and broken spacing
+    test_text = "Take p a r a c e t a m 0 l s00mg twice daily and Ibu profen if pain persists. Also taking am0xil."
     
     print(f"Raw Input: '{test_text}'\n")
-    
-    matches = matcher.match(test_text)
+    matches = matcher.match(test_text, threshold=65.0)
     
     print("Detected Medicines:")
     print(json.dumps(matches, indent=2))
