@@ -5,3 +5,4 @@ pytesseract
 rapidfuzz
 requests
 google-generativeai
+python-multipart
