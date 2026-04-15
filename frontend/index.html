@@ -961,7 +961,12 @@
                     formData.append('file', currentFile);
                     if (localText) formData.append('pre_extracted_text', localText);
 
-                    const response = await fetch('/scan', { method: 'POST', body: formData });
+                    console.log("Sending request...");
+
+                    const response = await fetch('https://medilens-ai.onrender.com/scan', { 
+                        method: 'POST', 
+                        body: formData 
+                    });
 
                     if (!response.ok) {
                         const errData = await response.json().catch(() => null);
@@ -970,11 +975,15 @@
 
                     const data = await response.json();
                     
+                    console.log("Response:", data);
+                    
                     saveHistory(data);
-                    renderResults(data);
+                    displayResults(data);
 
                 } catch (error) {
-                    showError(error.message || "Failed to connect to the scanning service. Make sure the backend is running.");
+                    console.error("API Error:", error);
+                    alert("Failed to connect to server");
+                    showError("Server is not reachable. Try again later.");
                 } finally {
                     skeletonLoader.style.display = 'none';
                     scanBtn.disabled = false;
@@ -982,7 +991,7 @@
             });
 
             // --- UI Rendering ---
-            function renderResults(data) {
+            function displayResults(data) {
                 // Time Feedback
                 if (data.processing_time) {
                     processingTimeEl.textContent = `Processed in ${data.processing_time}`;
@@ -1150,7 +1159,7 @@
                         resultsSection.style.display = 'none';
                         // Small timeout to allow smooth scrolling and visual reset
                         setTimeout(() => {
-                            renderResults(item.fullData);
+                            displayResults(item.fullData);
                         }, 300);
                     });
 
