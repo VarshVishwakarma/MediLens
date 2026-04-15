@@ -249,3 +249,210 @@
     }
   ]
 }
+
+{
+  "paracetamol": {
+    "type": "Analgesic / Antipyretic",
+    "uses": ["Fever", "Headache", "Body pain", "Mild to moderate pain"],
+    "dosage": "500–1000 mg every 4–6 hours",
+    "max_daily_dose": "4000 mg",
+    "warnings": [
+      "Do not exceed 4g per day",
+      "Overdose can cause liver damage",
+      "Avoid alcohol"
+    ],
+    "side_effects": ["Rare at normal dose", "Liver toxicity (overdose)"],
+    "common_brands": ["Crocin", "Calpol", "Dolo 650"],
+    "category": "OTC"
+  },
+
+  "ibuprofen": {
+    "type": "NSAID",
+    "uses": ["Pain relief", "Inflammation", "Fever", "Muscle pain"],
+    "dosage": "200–400 mg every 6–8 hours",
+    "max_daily_dose": "1200 mg (OTC)",
+    "warnings": [
+      "Take after food",
+      "May cause stomach ulcers",
+      "Avoid in kidney disease"
+    ],
+    "side_effects": ["Acidity", "Stomach pain", "Dizziness"],
+    "common_brands": ["Brufen", "Advil"],
+    "category": "OTC"
+  },
+
+  "amoxicillin": {
+    "type": "Antibiotic",
+    "uses": ["Bacterial infections", "Respiratory infections", "Ear infections"],
+    "dosage": "250–500 mg every 8 hours",
+    "warnings": [
+      "Complete full course",
+      "Do not use for viral infections",
+      "Allergic reactions possible"
+    ],
+    "side_effects": ["Diarrhea", "Nausea", "Skin rash"],
+    "common_brands": ["Mox", "Amoxil"],
+    "category": "Prescription"
+  },
+
+  "azithromycin": {
+    "type": "Antibiotic",
+    "uses": ["Respiratory infections", "Throat infections", "Skin infections"],
+    "dosage": "500 mg once daily for 3–5 days",
+    "warnings": [
+      "Complete full course",
+      "May affect heart rhythm",
+      "Avoid misuse"
+    ],
+    "side_effects": ["Nausea", "Diarrhea"],
+    "common_brands": ["Azee", "Zithromax"],
+    "category": "Prescription"
+  },
+
+  "cetirizine": {
+    "type": "Antihistamine",
+    "uses": ["Allergy", "Sneezing", "Runny nose", "Itching"],
+    "dosage": "10 mg once daily",
+    "warnings": [
+      "May cause drowsiness",
+      "Avoid alcohol",
+      "Use caution while driving"
+    ],
+    "side_effects": ["Sleepiness", "Dry mouth"],
+    "common_brands": ["Cetzine", "Zyrtec"],
+    "category": "OTC"
+  },
+
+  "metformin": {
+    "type": "Antidiabetic",
+    "uses": ["Type 2 diabetes control"],
+    "dosage": "500–1000 mg twice daily",
+    "warnings": [
+      "Take with meals",
+      "Monitor kidney function",
+      "Risk of lactic acidosis (rare)"
+    ],
+    "side_effects": ["Diarrhea", "Nausea"],
+    "common_brands": ["Glycomet", "Glucophage"],
+    "category": "Prescription"
+  },
+
+  "pantoprazole": {
+    "type": "Proton Pump Inhibitor",
+    "uses": ["Acidity", "GERD", "Ulcers"],
+    "dosage": "40 mg once daily before food",
+    "warnings": [
+      "Long-term use may weaken bones",
+      "Take before meals"
+    ],
+    "side_effects": ["Headache", "Diarrhea"],
+    "common_brands": ["Pantocid", "Pan 40"],
+    "category": "OTC"
+  },
+
+  "dolo 650": {
+    "type": "Analgesic",
+    "uses": ["Fever", "Pain relief"],
+    "dosage": "650 mg every 6 hours",
+    "warnings": [
+      "Contains paracetamol",
+      "Avoid overdose"
+    ],
+    "side_effects": ["Rare"],
+    "common_brands": ["Dolo 650"],
+    "category": "OTC"
+  },
+
+  "crocin": {
+    "type": "Analgesic",
+    "uses": ["Fever", "Pain"],
+    "dosage": "500 mg every 4–6 hours",
+    "warnings": [
+      "Contains paracetamol",
+      "Avoid overdose"
+    ],
+    "side_effects": ["Rare"],
+    "common_brands": ["Crocin"],
+    "category": "OTC"
+  },
+
+  "augmentin": {
+    "type": "Antibiotic",
+    "uses": ["Bacterial infections"],
+    "dosage": "625 mg every 8 hours",
+    "warnings": [
+      "Complete full course",
+      "May cause diarrhea"
+    ],
+    "side_effects": ["Diarrhea", "Nausea"],
+    "common_brands": ["Augmentin"],
+    "category": "Prescription"
+  },
+
+  "diclofenac": {
+    "type": "NSAID",
+    "uses": ["Pain", "Inflammation", "Joint pain"],
+    "dosage": "50 mg 2–3 times daily",
+    "warnings": [
+      "Take after food",
+      "May cause gastric issues",
+      "Avoid long-term use"
+    ],
+    "side_effects": ["Acidity", "Ulcers"],
+    "common_brands": ["Voveran"],
+    "category": "Prescription"
+  },
+
+  "ranitidine": {
+    "type": "H2 Blocker",
+    "uses": ["Acidity", "Ulcers"],
+    "dosage": "150 mg twice daily",
+    "warnings": [
+      "Use only if prescribed",
+      "Some variants banned in many countries"
+    ],
+    "side_effects": ["Headache", "Constipation"],
+    "common_brands": ["Rantac"],
+    "category": "OTC"
+  },
+
+  "levocetirizine": {
+    "type": "Antihistamine",
+    "uses": ["Allergy", "Cold symptoms"],
+    "dosage": "5 mg once daily",
+    "warnings": [
+      "May cause drowsiness",
+      "Avoid driving"
+    ],
+    "side_effects": ["Sleepiness"],
+    "common_brands": ["Xyzal"],
+    "category": "OTC"
+  },
+
+  "omeprazole": {
+    "type": "Proton Pump Inhibitor",
+    "uses": ["Acidity", "GERD"],
+    "dosage": "20 mg once daily",
+    "warnings": [
+      "Long-term use risks",
+      "Take before food"
+    ],
+    "side_effects": ["Headache", "Nausea"],
+    "common_brands": ["Omez"],
+    "category": "OTC"
+  },
+
+  "aspirin": {
+    "type": "NSAID / Antiplatelet",
+    "uses": ["Pain", "Heart protection (low dose)"],
+    "dosage": "75–325 mg daily",
+    "warnings": [
+      "Risk of bleeding",
+      "Avoid in children",
+      "Take after food"
+    ],
+    "side_effects": ["Bleeding", "Stomach irritation"],
+    "common_brands": ["Ecosprin"],
+    "category": "OTC"
+  }
+}
