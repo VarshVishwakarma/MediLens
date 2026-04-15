@@ -1,47 +1,82 @@
-[
-  {
-    "medications": ["Lisinopril", "Ibuprofen"],
-    "severity": "Moderate",
-    "description": "NSAIDs like Ibuprofen may reduce the antihypertensive effect of ACE inhibitors like Lisinopril and increase the risk of kidney damage."
+{
+  "system_rules": {
+    "tone": "professional, clear, concise",
+    "format": "bullet_points",
+    "language": "simple_english",
+    "strict_mode": true,
+    "no_hallucination": true
   },
-  {
-    "medications": ["Hydrochlorothiazide", "Lisinopril"],
-    "severity": "Moderate",
-    "description": "Concurrent use may cause excessive low blood pressure (hypotension). Monitor blood pressure closely."
+
+  "response_structure": {
+    "show_medicine_name": true,
+    "show_type": true,
+    "show_uses": true,
+    "show_dosage": true,
+    "show_warnings": true,
+    "show_side_effects": true,
+    "show_category": true
   },
-  {
-    "medications": ["Atorvastatin", "Azithromycin"],
-    "severity": "Moderate",
-    "description": "Macrolide antibiotics like Azithromycin can increase the blood levels of statins, increasing the risk of muscle pain or rhabdomyolysis."
+
+  "safety_rules": {
+    "always_add_disclaimer": true,
+    "disclaimer_text": "This information is for educational purposes only. Always consult a healthcare professional before taking any medication.",
+    "highlight_overdose_risk": true,
+    "highlight_prescription_required": true
   },
-  {
-    "medications": ["Levothyroxine", "Omeprazole"],
-    "severity": "Moderate",
-    "description": "Proton Pump Inhibitors (PPIs) like Omeprazole can reduce the absorption of Levothyroxine. Take Levothyroxine at least 4 hours apart."
+
+  "confidence_handling": {
+    "high": {
+      "message": "High confidence detection",
+      "allow_full_details": true
+    },
+    "medium": {
+      "message": "Moderate confidence detection. Verify before use.",
+      "allow_full_details": true
+    },
+    "low": {
+      "message": "Low confidence detection. Please re-scan or consult a professional.",
+      "allow_full_details": false
+    }
   },
-  {
-    "medications": ["Sertraline", "Ibuprofen"],
-    "severity": "Moderate",
-    "description": "Combining SSRIs (Sertraline) with NSAIDs (Ibuprofen) increases the risk of gastrointestinal bleeding."
+
+  "unknown_medicine": {
+    "message": "Medicine not found in database.",
+    "action": "show_generic_warning",
+    "fallback": "consult_doctor"
   },
-  {
-    "medications": ["Metformin", "Hydrochlorothiazide"],
-    "severity": "Low",
-    "description": "Thiazide diuretics can increase blood glucose levels, potentially countering the effect of Metformin. Blood sugar monitoring recommended."
+
+  "ui_behavior": {
+    "show_icons": true,
+    "highlight_warnings": true,
+    "color_code": {
+      "high": "green",
+      "medium": "orange",
+      "low": "red"
+    }
   },
-  {
-    "medications": ["Amlodipine", "Simvastatin"],
-    "severity": "Moderate",
-    "description": "Amlodipine can significantly increase exposure to Simvastatin. Limit Simvastatin dose to 20mg if taking Amlodipine."
+
+  "llm_rules": {
+    "use_llm": true,
+    "llm_role": "formatter_only",
+    "max_length": 200,
+    "style": "clean_medical_summary",
+    "avoid_extra_info": true
   },
-  {
-    "medications": ["Gabapentin", "Hydrocodone"],
-    "severity": "High",
-    "description": "Concomitant use increases the systemic exposure of Hydrocodone and risk of respiratory depression."
+
+  "medicine_priority": {
+    "prefer_exact_match": true,
+    "allow_fuzzy_match": true,
+    "min_confidence_threshold": 70
   },
-  {
-    "medications": ["Albuterol", "Beta-Blockers"],
-    "severity": "Moderate",
-    "description": "Beta-blockers can inhibit the bronchodilator effect of Albuterol and may precipitate bronchospasm in asthma patients."
+
+  "output_format": {
+    "type": "structured_json",
+    "include_fields": [
+      "medicine",
+      "confidence",
+      "info",
+      "explanation",
+      "warnings"
+    ]
   }
-]
+}
