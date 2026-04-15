@@ -1,15 +1,7 @@
-# Web Framework
-fastapi==0.110.0
-uvicorn==0.29.0
-python-multipart==0.0.9
-
-# Image Processing
-opencv-python-headless==4.9.0.80
-numpy==1.26.4
-Pillow==10.3.0
-
-# OCR Engine
-pytesseract==0.3.10
-
-# Text Matching (your S+ engine)
-rapidfuzz==3.6.1
+fastapi
+uvicorn
+opencv-python-headless
+pytesseract
+rapidfuzz
+requests
+google-generativeai
