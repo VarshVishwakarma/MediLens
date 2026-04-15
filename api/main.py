@@ -8,7 +8,8 @@ import pytesseract
 from rapidfuzz import fuzz
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from llm.explainer import generate_explanation
 
@@ -37,6 +38,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 MEDICINES_DB_PATH = "medicines.json"
 INSTRUCTIONS_PATH = "instructions.json"
@@ -142,6 +145,10 @@ def detect_medicines(text: str):
 # ==============================================================================
 # API ENDPOINTS
 # ==============================================================================
+@app.get("/")
+def serve_frontend():
+    return FileResponse("frontend/index.html")
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
