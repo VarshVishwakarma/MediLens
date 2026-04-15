@@ -4,6 +4,9 @@ import pytesseract
 import re
 import time
 import uuid
+import pytesseract
+
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
 
 # ==============================================================================
