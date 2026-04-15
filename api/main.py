@@ -5,6 +5,7 @@ import logging
 import re
 import cv2
 import pytesseract
+from pathlib import Path
 from rapidfuzz import fuzz
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,7 +40,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+BASE_DIR = Path(__file__).resolve().parent.parent  # 🔥 GO UP ONE LEVEL
+
+app.mount(
+    "/static",
+    StaticFiles(directory=BASE_DIR / "frontend"),
+    name="static"
+)
 
 MEDICINES_DB_PATH = "medicines.json"
 INSTRUCTIONS_PATH = "instructions.json"
@@ -145,9 +152,14 @@ def detect_medicines(text: str):
 # ==============================================================================
 # API ENDPOINTS
 # ==============================================================================
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def serve_frontend():
-    return FileResponse("frontend/index.html")
+    index_path = BASE_DIR / "frontend" / "index.html"
+
+    if index_path.exists():
+        return FileResponse(index_path)
+
+    return {"error": f"index.html not found at {index_path}"}
 
 @app.get("/health")
 def health_check():
