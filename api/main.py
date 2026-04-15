@@ -1,39 +1,25 @@
 import os
-import uuid
+import time
 import json
 import logging
 import re
-import time
-from collections import defaultdict
-from typing import List, Dict, Any
-
-from fastapi import FastAPI, UploadFile, File, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
 import cv2
-import numpy as np
 import pytesseract
 from rapidfuzz import fuzz
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+
+from llm.explainer import generate_explanation
 
 # ==============================================================================
 # CONFIGURATION & LOGGING
 # ==============================================================================
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]
+    format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-TEMP_DIR = "/tmp"
-MEDICINES_DB_PATH = "medicines.json"
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB limit
-DEBUG = True  # Toggle for returning raw OCR data and extended logs
-
-# Basic In-Memory Rate Limiting
-RATE_LIMIT_DURATION = 60  # seconds
-MAX_REQUESTS_PER_IP = 10
-ip_request_counts = defaultdict(list)
 
 # ==============================================================================
 # FASTAPI APP SETUP
@@ -52,216 +38,172 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+MEDICINES_DB_PATH = "medicines.json"
+INSTRUCTIONS_PATH = "instructions.json"
+
 # ==============================================================================
 # DATA ACCESS (LAZY LOADING)
 # ==============================================================================
 _medicines_db = None
+_instructions = None
 
-
-def get_medicines_db() -> Dict[str, Any]:
-    """Lazy-loads the medicines.json file to avoid blocking startup."""
+def get_medicines_db():
     global _medicines_db
     if _medicines_db is None:
         try:
             if os.path.exists(MEDICINES_DB_PATH):
                 with open(MEDICINES_DB_PATH, "r", encoding="utf-8") as f:
                     _medicines_db = json.load(f)
-                logger.info(f"Loaded {len(_medicines_db)} medicines from {MEDICINES_DB_PATH}")
             else:
-                logger.warning(f"File {MEDICINES_DB_PATH} not found. Using fallback mock data.")
-                _medicines_db = {
-                    "paracetamol": {
-                        "uses": "Pain relief, fever reduction",
-                        "dosage": "500mg-1000mg every 4-6 hours",
-                        "warnings": "Do not exceed 4g per day. Liver damage risk."
-                    },
-                    "amoxicillin": {
-                        "uses": "Bacterial infections",
-                        "dosage": "250mg-500mg every 8 hours",
-                        "warnings": "May cause stomach upset. Allergic reactions possible."
-                    },
-                    "ibuprofen": {
-                        "uses": "Pain relief, inflammation reduction",
-                        "dosage": "200mg-400mg every 4-6 hours",
-                        "warnings": "Stomach bleeding risk. Take with food."
-                    }
-                }
+                _medicines_db = {}
         except Exception as e:
             logger.error(f"Failed to load medicines DB: {e}")
             _medicines_db = {}
     return _medicines_db
 
+def get_instructions():
+    global _instructions
+    if _instructions is None:
+        try:
+            if os.path.exists(INSTRUCTIONS_PATH):
+                with open(INSTRUCTIONS_PATH, "r", encoding="utf-8") as f:
+                    _instructions = json.load(f)
+            else:
+                _instructions = {}
+        except Exception as e:
+            logger.error(f"Failed to load instructions: {e}")
+            _instructions = {}
+    return _instructions
 
 # ==============================================================================
-# PIPELINE FUNCTIONS
+# FAST OCR PIPELINE
 # ==============================================================================
-def preprocess_image(img: np.ndarray) -> np.ndarray:
-    """Enhances image quality before OCR to handle blur and handwriting."""
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    resized = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-    thresh = cv2.adaptiveThreshold(
-        resized, 255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY, 11, 2
-    )
-    return thresh
-
-
 def extract_text(image_path: str) -> str:
-    """Extracts text using multi-pass Tesseract OCR for maximum accuracy."""
+    start_time = time.time()
     try:
         img = cv2.imread(image_path)
         if img is None:
-            raise ValueError("Failed to load image for OCR.")
-
-        texts = []
-
-        # Pass 1: Raw image
-        texts.append(pytesseract.image_to_string(img))
-
-        # Pass 2: Preprocessed image (handles blur/lighting)
-        processed = preprocess_image(img)
-        texts.append(pytesseract.image_to_string(processed))
-
-        # Pass 3: Sparse mode (PSM 11 - Excellent for scattered prescription text)
-        config = "--psm 11"
-        texts.append(pytesseract.image_to_string(processed, config=config))
-
-        return "\n".join(texts).strip()
-
+            return ""
+        
+        # 1. FORCE SMALL IMAGE SIZE
+        img = cv2.resize(img, (500, 500))
+        
+        # 2. SIMPLE PREPROCESSING
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # 3. SINGLE PASS TESSERACT
+        text = pytesseract.image_to_string(gray, config="--oem 3 --psm 7")
+        
+        # 4. CLEAN OUTPUT
+        text = re.sub(r'\s+', ' ', text).strip().lower()[:1000]
+        
+        logger.info(f"OCR time: {time.time() - start_time:.2f} sec")
+        return text
     except Exception as e:
-        logger.error(f"OCR failure on {image_path}: {e}")
+        logger.error(f"OCR Error: {e}")
         return ""
 
-
-def detect_medicines(text: str) -> List[Dict[str, Any]]:
-    """Identifies medicines using intelligent word-level fuzzy matching."""
+# ==============================================================================
+# MEDICINE DETECTION
+# ==============================================================================
+def detect_medicines(text: str):
+    start_time = time.time()
     if not text:
         return []
 
     db = get_medicines_db()
-    known_medicines = list(db.keys())
-    detected_raw = []
+    results = []
 
-    text_lower = text.lower()
-    words = re.findall(r'\b\w+\b', text_lower)
+    for med_name, med_info in db.items():
+        score = fuzz.token_set_ratio(med_name.lower(), text)
+        
+        if score >= 70:
+            if score >= 90:
+                level = "high"
+            elif score >= 80:
+                level = "medium"
+            else:
+                level = "low"
 
-    try:
-        for med in known_medicines:
-            best_score = 0.0
-            med_lower = med.lower()
+            results.append({
+                "name": med_name.capitalize(),
+                "confidence": round(score, 2),
+                "level": level,
+                "info": med_info
+            })
 
-            # 1. Word-level exact/close matching
-            for word in words:
-                score = fuzz.ratio(med_lower, word)
-                if score > best_score:
-                    best_score = score
-
-            # 2. Block-level partial matching (fallback for multi-word or compound names)
-            partial_score = fuzz.partial_ratio(med_lower, text_lower)
-
-            final_score = max(best_score, partial_score)
-
-            if final_score >= 80.0:
-                if final_score >= 90:
-                    level = "High"
-                elif final_score >= 85:
-                    level = "Medium"
-                else:
-                    level = "Low"
-
-                detected_raw.append({
-                    "name": med.capitalize(),
-                    "confidence": round(final_score, 2),
-                    "confidence_level": level,
-                    "info": db.get(med, {})
-                })
-
-        # Deduplication: Keep the instance with the highest confidence
-        unique_medicines = {}
-        for med in detected_raw:
-            name = med["name"]
-            if name not in unique_medicines or med["confidence"] > unique_medicines[name]["confidence"]:
-                unique_medicines[name] = med
-
-        final_detected = list(unique_medicines.values())
-        final_detected.sort(key=lambda x: x["confidence"], reverse=True)
-        return final_detected
-
-    except Exception as e:
-        logger.error(f"Medicine matching error: {e}")
-        return []
-
-
-def generate_explanation(medicines: List[Dict[str, Any]]) -> str:
-    """Generates a short, clear, and human-readable explanation."""
-    try:
-        if not medicines:
-            return "No medicines detected. Please ensure the scan is clear and well-lit."
-
-        lines = ["💊 **Detected Medications:**\n"]
-        for med in medicines:
-            name = med.get("name", "Unknown")
-            info = med.get("info", {})
-            uses = info.get("uses", "N/A")
-            warnings = info.get("warnings", "None")
-
-            lines.append(f"- **{name}**")
-            lines.append(f"  • Uses: {uses}")
-            lines.append(f"  • Warning: {warnings}\n")
-
-        lines.append("⚠️ *Always consult a healthcare professional before taking medication.*")
-        return "\n".join(lines)
-    except Exception as e:
-        logger.error(f"Explanation generation error: {e}")
-        return "Explanation could not be generated due to an internal error."
-
+    # Sort and return top 3 matches
+    results.sort(key=lambda x: x["confidence"], reverse=True)
+    top_results = results[:3]
+    
+    logger.info(f"Detection time: {time.time() - start_time:.2f} sec")
+    return top_results
 
 # ==============================================================================
 # API ENDPOINTS
 # ==============================================================================
-@app.get("/", response_class=HTMLResponse)
-def home():
-    """Serves the frontend HTML."""
-    with open("frontend/index.html", "r") as f:
-        return f.read()
-
-
 @app.get("/health")
 def health_check():
-    """Simple health check endpoint."""
     return {"status": "ok"}
-
 
 @app.post("/scan")
 async def scan(file: UploadFile = File(...)):
+    start_time = time.time()
+    temp_file = os.path.join("/tmp", file.filename)
+    
     try:
-        temp_file = os.path.join("/tmp", file.filename)
-
         with open(temp_file, "wb") as buffer:
             buffer.write(await file.read())
 
         text = extract_text(temp_file)
-        medicines = detect_medicines(text)
+        detected = detect_medicines(text)
+        
+        explanation = ""
+        
+        if detected:
+            top_med = detected[0]
+            conf_level = top_med["level"]
+            
+            # LLM USAGE STRATEGY
+            if conf_level in ["high", "medium"]:
+                instructions = get_instructions()
+                explanation = generate_explanation(
+                    medicine_name=top_med["name"],
+                    medicine_info=top_med["info"],
+                    instructions=instructions,
+                    confidence=conf_level
+                )
+            else:
+                explanation = f"⚠️ Low confidence reading. Detected {top_med['name']}, but please verify manually."
+        else:
+            explanation = "No medicines detected. Please ensure the scan is clear."
 
+        # Filter out full 'info' payload for clean response
+        final_medicines = [
+            {
+                "name": m["name"],
+                "confidence": m["confidence"],
+                "level": m["level"]
+            } for m in detected
+        ]
+
+        total_time = time.time() - start_time
+        logger.info(f"Total request time: {total_time:.2f} sec")
+
+        return {
+            "text": text,
+            "medicines": final_medicines,
+            "explanation": explanation,
+            "processing_time": f"{total_time:.2f} sec"
+        }
+        
+    except Exception as e:
+        return {"error": str(e)}
+        
+    finally:
         if os.path.exists(temp_file):
             os.remove(temp_file)
 
-        explanation = generate_explanation(medicines)
-
-        return {
-            "extracted_text": text,
-            "medicines": medicines,
-            "explanation": explanation
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
-
-
-# ==============================================================================
-# RUN CONFIGURATION
-# ==============================================================================
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
