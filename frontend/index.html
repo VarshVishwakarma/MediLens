@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,15 +7,17 @@
     <!-- Google Fonts for Modern Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS Variables for Theming */
+        /* --- CSS VARIABLES & THEMING --- */
         :root {
-            --primary: #0ea5e9;       /* Light Blue */
-            --primary-dark: #0284c7;
-            --secondary: #10b981;     /* Mint/Teal */
-            --bg-gradient-1: #f0f9ff;
-            --bg-gradient-2: #e0f2fe;
+            /* Light Theme */
+            --primary: #dc2626;
+            --primary-dark: #991b1b;
+            --secondary: #10b981;
+            --bg-gradient-1: #fef2f2;
+            --bg-gradient-2: #fee2e2;
             --surface: rgba(255, 255, 255, 0.85);
             --surface-solid: #ffffff;
+            --surface-hover: #f8fafc;
             --text-main: #0f172a;
             --text-muted: #64748b;
             --border: #cbd5e1;
@@ -27,7 +29,25 @@
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Base Styles */
+        [data-theme="dark"] {
+            /* Dark Theme */
+            --primary: #f87171;
+            --primary-dark: #dc2626;
+            --secondary: #34d399;
+            --bg-gradient-1: #2a1515;
+            --bg-gradient-2: #3b1e1e;
+            --surface: rgba(30, 41, 59, 0.85);
+            --surface-solid: #1e293b;
+            --surface-hover: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --error: #f87171;
+            --error-bg: rgba(239, 68, 68, 0.1);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- BASE STYLES --- */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -43,25 +63,58 @@
             flex-direction: column;
             align-items: center;
             padding: 2rem 1rem;
+            transition: var(--transition);
         }
 
         .container {
             max-width: 800px;
             width: 100%;
             margin: 0 auto;
-            animation: fadeInUp 0.6s ease-out;
+            position: relative;
         }
 
-        /* Header Styles */
+        /* --- THEME TOGGLE --- */
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            z-index: 10;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            background: var(--surface-hover);
+        }
+
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* --- HEADER --- */
         header {
             text-align: center;
             margin-bottom: 2.5rem;
+            animation: fadeInDown 0.6s ease-out;
         }
 
         h1 {
             font-size: 2.5rem;
             font-weight: 700;
-            color: var(--primary-dark);
+            color: var(--primary);
             margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
@@ -75,19 +128,21 @@
             font-weight: 400;
         }
 
-        /* Card Layout (Glassmorphism) */
+        /* --- CARD LAYOUT --- */
         .card {
             background: var(--surface);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 2.5rem;
             box-shadow: var(--shadow);
             margin-bottom: 2rem;
+            transition: var(--transition);
+            animation: fadeInUp 0.6s ease-out;
         }
 
-        /* Drag & Drop Zone */
+        /* --- DRAG & DROP ZONE --- */
         .drop-zone {
             border: 2px dashed var(--primary);
             border-radius: var(--radius-md);
@@ -95,15 +150,15 @@
             text-align: center;
             cursor: pointer;
             transition: var(--transition);
-            background: rgba(14, 165, 233, 0.02);
+            background: rgba(220, 38, 38, 0.03);
             position: relative;
             overflow: hidden;
         }
 
         .drop-zone:hover, .drop-zone.dragover {
-            background: rgba(14, 165, 233, 0.08);
+            background: rgba(220, 38, 38, 0.1);
             border-color: var(--primary-dark);
-            transform: scale(1.01);
+            transform: scale(1.02);
         }
 
         .drop-zone svg {
@@ -111,12 +166,17 @@
             height: 48px;
             color: var(--primary);
             margin-bottom: 1rem;
+            transition: var(--transition);
+        }
+
+        .drop-zone:hover svg {
+            transform: translateY(-5px);
         }
 
         .drop-zone p {
             color: var(--text-muted);
             font-size: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .drop-zone .browse-text {
@@ -124,12 +184,8 @@
             font-weight: 600;
         }
 
-        /* Hidden File Input */
-        #file-input {
-            display: none;
-        }
+        #file-input { display: none; }
 
-        /* Image Preview */
         #file-preview {
             display: none;
             width: 100%;
@@ -138,11 +194,15 @@
             max-height: 300px;
             object-fit: contain;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.4s ease-out;
         }
 
-        /* Action Button */
+        /* --- BUTTONS --- */
         .btn {
-            display: block;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
             width: 100%;
             padding: 1rem;
             margin-top: 1.5rem;
@@ -154,23 +214,44 @@
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
-            box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39);
+            box-shadow: 0 4px 14px 0 rgba(220, 38, 38, 0.3);
         }
 
         .btn:hover:not(:disabled) {
             background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
         }
 
         .btn:disabled {
-            background: var(--border);
+            background: var(--text-muted);
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+            opacity: 0.7;
         }
 
-        /* Error Message */
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--primary-dark);
+            box-shadow: none;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            width: auto;
+            margin-top: 0;
+        }
+
+        /* --- ERROR MESSAGE --- */
         .error-message {
             display: none;
             background: var(--error-bg);
@@ -179,23 +260,47 @@
             border-radius: var(--radius-md);
             margin-top: 1rem;
             font-size: 0.95rem;
-            border: 1px solid #fecaca;
+            border: 1px solid var(--error);
             text-align: center;
             animation: fadeIn 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        /* --- SKELETON LOADER UI --- */
+        /* --- SKELETON LOADER & STATUS --- */
         .skeleton-container {
             display: none;
             width: 100%;
             animation: fadeIn 0.3s;
         }
 
+        .status-indicator {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(220, 38, 38, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
         .skeleton-card-wrap {
             background: var(--surface);
             border-radius: var(--radius-lg);
             padding: 2.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            border: 1px solid var(--border);
             box-shadow: var(--shadow);
             margin-bottom: 2rem;
         }
@@ -203,33 +308,12 @@
         .skeleton-header {
             height: 24px;
             width: 150px;
-            background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%);
+            background: linear-gradient(90deg, rgba(203, 213, 225, 0.3) 25%, rgba(148, 163, 184, 0.4) 50%, rgba(203, 213, 225, 0.3) 75%);
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
             border-radius: 4px;
             margin-bottom: 1.5rem;
         }
-
-        .skeleton-box {
-            background: var(--surface-solid);
-            border-radius: var(--radius-md);
-            padding: 1.5rem;
-            border: 1px solid var(--border);
-            margin-bottom: 2.5rem;
-        }
-
-        .skeleton-line {
-            height: 14px;
-            background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: 4px;
-            margin-bottom: 12px;
-            width: 100%;
-        }
-
-        .skeleton-line.short { width: 60%; }
-        .skeleton-line.shorter { width: 40%; }
 
         .skeleton-grid {
             display: grid;
@@ -238,8 +322,8 @@
         }
 
         .skeleton-med-card {
-            height: 120px;
-            background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%);
+            height: 140px;
+            background: linear-gradient(90deg, rgba(203, 213, 225, 0.3) 25%, rgba(148, 163, 184, 0.4) 50%, rgba(203, 213, 225, 0.3) 75%);
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
             border-radius: var(--radius-md);
@@ -250,59 +334,44 @@
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Results Section */
-        #results-section {
-            display: none;
-            /* Animation handled by JS stagger */
+        /* --- RESULTS HIERARCHY --- */
+        #results-section { display: none; }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
         }
 
         h3.section-title {
             font-size: 1.25rem;
             color: var(--text-main);
-            margin-bottom: 1rem;
-            border-bottom: 2px solid var(--bg-gradient-2);
-            padding-bottom: 0.5rem;
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        /* Extracted Text Box */
-        .extracted-text-box {
-            background: var(--surface-solid);
-            padding: 1.5rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 2rem;
-            max-height: 200px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-
-        /* Text Highlighting */
-        .highlight-med {
-            background-color: rgba(16, 185, 129, 0.15);
-            color: var(--secondary);
             font-weight: 600;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border-bottom: 2px solid var(--secondary);
-            transition: all 0.2s;
         }
         
-        .highlight-med:hover {
-            background-color: rgba(16, 185, 129, 0.25);
+        .processing-time {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: var(--surface-hover);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
         }
 
-        /* Medicine Cards Grid */
+        /* Medicine Cards */
         .medicines-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.2rem;
+            margin-bottom: 2rem;
         }
 
         .medicine-card {
@@ -311,28 +380,72 @@
             border-radius: var(--radius-md);
             padding: 1.5rem;
             transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .medicine-card:hover {
             border-color: var(--primary);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            transform: translateY(-4px);
         }
 
         .med-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
         }
 
         .med-name {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: var(--primary-dark);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
             display: flex;
             align-items: center;
+            gap: 8px;
+        }
+
+        .med-use-snippet {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Deep Details */
+        .med-details {
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .med-detail-item {
+            display: flex;
+            align-items: flex-start;
             gap: 6px;
+            line-height: 1.4;
+        }
+
+        .med-detail-item svg {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .med-detail-warning svg {
+            color: var(--error);
         }
 
         /* Confidence Badges */
@@ -344,6 +457,7 @@
             display: flex;
             align-items: center;
             gap: 4px;
+            white-space: nowrap;
         }
 
         .badge-high { background: rgba(16, 185, 129, 0.1); color: var(--secondary); border: 1px solid rgba(16, 185, 129, 0.2); }
@@ -351,10 +465,8 @@
         .badge-low { background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2); }
 
         /* Progress Bar */
-        .confidence-wrapper {
-            margin-bottom: 0.5rem;
-        }
-
+        .confidence-wrapper { margin-top: auto; }
+        
         .confidence-header {
             display: flex;
             justify-content: space-between;
@@ -365,7 +477,7 @@
         }
 
         .progress-bar-bg {
-            height: 8px;
+            height: 6px;
             background-color: var(--border);
             border-radius: 4px;
             overflow: hidden;
@@ -374,28 +486,109 @@
         .progress-bar-fill {
             height: 100%;
             border-radius: 4px;
-            width: 0%; /* Set via JS */
+            width: 0%;
             transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* History Section */
+        /* AI Summary */
+        .ai-summary-box {
+            background: rgba(220, 38, 38, 0.05);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .ai-summary-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--primary);
+            border-top-left-radius: var(--radius-md);
+            border-bottom-left-radius: var(--radius-md);
+        }
+
+        /* Collapsible Raw Text */
+        .raw-text-container {
+            margin-top: 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: var(--surface-solid);
+        }
+
+        .raw-text-header {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: var(--surface-hover);
+            transition: var(--transition);
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .raw-text-header:hover { background: var(--border); }
+
+        .raw-text-content {
+            padding: 0;
+            max-height: 0;
+            overflow-y: auto;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .raw-text-content.open {
+            padding: 1.5rem;
+            max-height: 300px;
+            border-top: 1px solid var(--border);
+        }
+
+        .highlight-med {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--secondary);
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border-bottom: 2px solid var(--secondary);
+            transition: var(--transition);
+        }
+        
+        .highlight-med:hover { background-color: rgba(16, 185, 129, 0.25); }
+
+        /* --- HISTORY SECTION --- */
         .history-section {
-            display: none;
             width: 100%;
             margin-top: 1rem;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
         }
 
         .history-title {
-            font-size: 1.1rem;
-            color: var(--primary-dark);
-            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            color: var(--text-main);
             font-weight: 600;
         }
 
         .history-list {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
 
         .history-item {
@@ -407,19 +600,21 @@
             justify-content: space-between;
             align-items: center;
             transition: var(--transition);
+            cursor: pointer;
         }
 
         .history-item:hover {
             border-color: var(--primary);
-            background: var(--surface-solid);
+            background: var(--surface-hover);
+            transform: translateX(4px);
         }
 
-        .history-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+        .history-item.recent {
+            border-left: 4px solid var(--secondary);
         }
 
+        .history-info { display: flex; flex-direction: column; gap: 4px; }
+        
         .history-meds {
             font-weight: 600;
             color: var(--text-main);
@@ -434,7 +629,7 @@
         .history-snippet {
             font-size: 0.85rem;
             color: var(--text-muted);
-            max-width: 200px;
+            max-width: 250px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -442,10 +637,14 @@
             font-style: italic;
         }
 
-        /* Animations */
+        /* --- ANIMATIONS --- */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeInUp { 
             from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        @keyframes fadeInDown { 
+            from { opacity: 0; transform: translateY(-20px); } 
             to { opacity: 1; transform: translateY(0); } 
         }
 
@@ -454,30 +653,44 @@
             animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        /* Responsive */
+        /* --- RESPONSIVE --- */
         @media (max-width: 600px) {
             .card, .skeleton-card-wrap { padding: 1.5rem; }
             .drop-zone { padding: 2rem 1rem; }
             .medicines-grid { grid-template-columns: 1fr; }
             .history-item { flex-direction: column; align-items: flex-start; gap: 8px; }
             .history-snippet { text-align: left; max-width: 100%; }
+            .theme-toggle { top: -40px; right: 0; }
+            .container { margin-top: 2rem; }
         }
     </style>
 </head>
 <body>
 
     <div class="container">
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle Dark Mode">
+            <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            <svg id="sun-icon" style="display:none;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+        </button>
+
         <!-- Header -->
         <header>
-            <h1>🩺 MediLens AI</h1>
+            <h1>
+                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                MediLens AI
+            </h1>
             <p class="subtitle">Smart Prescription & Medication Scanner</p>
         </header>
 
         <!-- Main Upload Card -->
-        <div class="card">
+        <div class="card" id="upload-card">
             <div class="drop-zone" id="drop-zone">
                 <div id="drop-content">
-                    <!-- Upload Icon SVG -->
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
@@ -489,21 +702,24 @@
             
             <input type="file" id="file-input" accept="image/*">
             
-            <div class="error-message" id="error-message"></div>
+            <div class="error-message" id="error-message" style="display: none;">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span id="error-text">Upload a clear image with good lighting.</span>
+            </div>
             
-            <button class="btn" id="scan-btn" disabled>Scan Prescription</button>
+            <button class="btn" id="scan-btn" disabled>
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Scan Prescription
+            </button>
         </div>
 
-        <!-- Skeleton Loading State -->
+        <!-- Skeleton Loading State & Status -->
         <div class="skeleton-container" id="skeleton-loader">
+            <div class="status-indicator" id="status-indicator">
+                <div class="spinner"></div>
+                <span id="status-text">Analyzing image...</span>
+            </div>
             <div class="skeleton-card-wrap">
-                <div class="skeleton-header"></div>
-                <div class="skeleton-box">
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line short"></div>
-                </div>
-
                 <div class="skeleton-header" style="width: 200px;"></div>
                 <div class="skeleton-grid">
                     <div class="skeleton-med-card"></div>
@@ -515,61 +731,146 @@
         <!-- Results Section -->
         <div id="results-section">
             <div class="card stagger-anim" style="animation-delay: 0s;">
-                <h3 class="section-title">
-                    <svg style="width:20px; height:20px; color:var(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Extracted Text
-                </h3>
-                <div class="extracted-text-box" id="extracted-text"></div>
+                
+                <!-- Header with Processing Time -->
+                <div class="results-header">
+                    <h3 class="section-title" style="margin-bottom: 0; padding-bottom: 0; border: none;">
+                        <svg style="width:24px; height:24px; color:var(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        Detected Medicines
+                    </h3>
+                    <div class="processing-time" id="processing-time"></div>
+                </div>
 
-                <h3 class="section-title" style="margin-top: 2rem;">
-                    <svg style="width:20px; height:20px; color:var(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                    Detected Medicines
-                </h3>
+                <!-- Detected Medicines -->
                 <div class="medicines-grid" id="medicines-grid">
-                    <!-- Medicine Cards Injected Here via JS -->
+                    <!-- Cards Injected Here -->
                 </div>
                 
-                <!-- LLM Explanation Container -->
-                <div id="explanation-container" class="stagger-anim" style="display: none; margin-top: 2rem; animation-delay: 0.4s;">
-                    <h3 class="section-title">
-                        <svg style="width:20px; height:20px; color:var(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <!-- AI Summary -->
+                <div id="explanation-container" class="stagger-anim" style="display: none; animation-delay: 0.3s;">
+                    <h3 class="section-title" style="margin-top: 1rem;">
+                        <svg style="width:24px; height:24px; color:var(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         AI Summary
                     </h3>
-                    <div class="extracted-text-box" id="explanation-text" style="background: rgba(16, 185, 129, 0.05); border-color: var(--secondary);"></div>
+                    <div class="ai-summary-box" id="explanation-text"></div>
                 </div>
+
+                <!-- Collapsible Raw Extracted Text -->
+                <div class="raw-text-container stagger-anim" style="animation-delay: 0.4s;">
+                    <div class="raw-text-header" id="raw-text-toggle">
+                        <span>
+                            <svg style="width:18px; height:18px; display:inline; vertical-align:text-bottom; margin-right:6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            View Raw Extracted Text
+                        </span>
+                        <svg id="raw-text-icon" style="width:20px; height:20px; transition: transform 0.3s;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="raw-text-content" id="raw-text-content"></div>
+                </div>
+
+                <!-- Rescan CTA -->
+                <button class="btn btn-outline stagger-anim" id="rescan-btn" style="margin-top: 2rem; animation-delay: 0.5s;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Scan Another Prescription
+                </button>
             </div>
         </div>
 
         <!-- Scan History -->
         <div class="history-section" id="history-section">
-            <h4 class="history-title">Recent Scans</h4>
+            <div class="history-header">
+                <h4 class="history-title">Recent Scans</h4>
+                <button class="btn btn-outline btn-small" id="clear-history-btn">Clear History</button>
+            </div>
             <div class="history-list" id="history-list">
-                <!-- History Items Injected via JS -->
+                <!-- History Items Injected Here -->
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
             const dropZone = document.getElementById('drop-zone');
             const fileInput = document.getElementById('file-input');
             const filePreview = document.getElementById('file-preview');
             const dropContent = document.getElementById('drop-content');
             const scanBtn = document.getElementById('scan-btn');
+            const rescanBtn = document.getElementById('rescan-btn');
             const errorMsg = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
             const skeletonLoader = document.getElementById('skeleton-loader');
+            const statusText = document.getElementById('status-text');
             const resultsSection = document.getElementById('results-section');
-            const extractedTextDiv = document.getElementById('extracted-text');
+            const processingTimeEl = document.getElementById('processing-time');
+            const rawTextContent = document.getElementById('raw-text-content');
+            const rawTextToggle = document.getElementById('raw-text-toggle');
+            const rawTextIcon = document.getElementById('raw-text-icon');
             const medicinesGrid = document.getElementById('medicines-grid');
             const explanationContainer = document.getElementById('explanation-container');
             const explanationText = document.getElementById('explanation-text');
             const historySection = document.getElementById('history-section');
             const historyList = document.getElementById('history-list');
-
+            const clearHistoryBtn = document.getElementById('clear-history-btn');
+            const themeToggle = document.getElementById('theme-toggle');
+            
             let currentFile = null;
 
-            // Load History on Boot
+            // --- Initialization ---
+            initTheme();
             renderHistory();
+
+            // --- Theme Management ---
+            function initTheme() {
+                const savedTheme = localStorage.getItem('medilens_theme') || 'light';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                updateThemeIcons(savedTheme);
+            }
+
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('medilens_theme', newTheme);
+                updateThemeIcons(newTheme);
+            });
+
+            function updateThemeIcons(theme) {
+                if (theme === 'dark') {
+                    document.getElementById('moon-icon').style.display = 'none';
+                    document.getElementById('sun-icon').style.display = 'block';
+                } else {
+                    document.getElementById('moon-icon').style.display = 'block';
+                    document.getElementById('sun-icon').style.display = 'none';
+                }
+            }
+
+            // --- Collapsible Raw Text ---
+            rawTextToggle.addEventListener('click', () => {
+                const isOpen = rawTextContent.classList.contains('open');
+                if (isOpen) {
+                    rawTextContent.classList.remove('open');
+                    rawTextIcon.style.transform = 'rotate(0deg)';
+                } else {
+                    rawTextContent.classList.add('open');
+                    rawTextIcon.style.transform = 'rotate(180deg)';
+                }
+            });
+
+            // --- Reset UI / Rescan ---
+            rescanBtn.addEventListener('click', resetUI);
+
+            function resetUI() {
+                currentFile = null;
+                fileInput.value = '';
+                resultsSection.style.display = 'none';
+                filePreview.style.display = 'none';
+                filePreview.src = '';
+                dropContent.style.display = 'block';
+                dropZone.style.padding = '3rem 2rem';
+                scanBtn.disabled = true;
+                hideError();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
 
             // --- Drag & Drop Handlers ---
             dropZone.addEventListener('click', () => fileInput.click());
@@ -586,7 +887,6 @@
             dropZone.addEventListener('drop', (e) => {
                 e.preventDefault();
                 dropZone.classList.remove('dragover');
-                
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     handleFile(e.dataTransfer.files[0]);
                 }
@@ -598,20 +898,15 @@
                 }
             });
 
-            // --- File Processing ---
             function handleFile(file) {
                 if (!file.type.startsWith('image/')) {
-                    showError("Invalid file type. Please upload an image (JPG, PNG).");
+                    showError("Invalid file type. Please upload a clear image (JPG, PNG).");
                     return;
                 }
-
                 currentFile = file;
                 hideError();
-                
                 resultsSection.style.display = 'none';
-                
                 scanBtn.disabled = false;
-                scanBtn.textContent = "Scan Prescription";
 
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -623,6 +918,27 @@
                 reader.readAsDataURL(file);
             }
 
+            // --- Client-Side OCR Preparation ---
+            const ENABLE_CLIENT_OCR = false; 
+            async function runClientSideOCR(file) {
+                if (!ENABLE_CLIENT_OCR) return null;
+                return null; 
+            }
+
+            // --- Status Updater ---
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+            async function cycleStatus() {
+                updateStatus("Uploading image...");
+                await sleep(800);
+                updateStatus("Processing image...");
+                await sleep(1000);
+                updateStatus("Detecting medicines...");
+            }
+
+            function updateStatus(msg) {
+                statusText.textContent = msg;
+            }
+
             // --- API Call & Submission ---
             scanBtn.addEventListener('click', async () => {
                 if (!currentFile) return;
@@ -630,14 +946,21 @@
                 scanBtn.disabled = true;
                 hideError();
                 resultsSection.style.display = 'none';
-                skeletonLoader.style.display = 'block';
+                
+                rawTextContent.classList.remove('open');
+                rawTextIcon.style.transform = 'rotate(0deg)';
 
-                const formData = new FormData();
-                formData.append('file', currentFile);
+                skeletonLoader.style.display = 'block';
+                
+                const statusPromise = cycleStatus(); 
 
                 try {
-                    // MOCKING response for preview if backend is missing
-                    // Remove this or ensure your backend matches the response structure
+                    let localText = await runClientSideOCR(currentFile);
+                    
+                    const formData = new FormData();
+                    formData.append('file', currentFile);
+                    if (localText) formData.append('pre_extracted_text', localText);
+
                     const response = await fetch('/scan', { method: 'POST', body: formData });
 
                     if (!response.ok) {
@@ -647,9 +970,7 @@
 
                     const data = await response.json();
                     
-                    // Add to LocalStorage History
                     saveHistory(data);
-                    
                     renderResults(data);
 
                 } catch (error) {
@@ -662,29 +983,22 @@
 
             // --- UI Rendering ---
             function renderResults(data) {
-                // 1. Render Extracted Text with Highlight Logic
-                let rawText = data.extracted_text || "No legible text found.";
-                
-                // Escape HTML strictly
-                let safeText = rawText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                
-                if (data.medicines && data.medicines.length > 0) {
-                    // Sort medicines by length descending to prevent partial replacements
-                    const sortedMeds = [...data.medicines].sort((a,b) => b.name.length - a.name.length);
-                    sortedMeds.forEach(med => {
-                        // Regex to globally replace the medicine name (case insensitive)
-                        const regex = new RegExp(`(${med.name})`, 'gi');
-                        safeText = safeText.replace(regex, '<span class="highlight-med">$1</span>');
-                    });
+                // Time Feedback
+                if (data.processing_time) {
+                    processingTimeEl.textContent = `Processed in ${data.processing_time}`;
+                } else {
+                    processingTimeEl.textContent = '';
                 }
-                extractedTextDiv.innerHTML = safeText;
 
-                // 2. Render Medicines with Staggered Animations & Confidence Badges
+                // 1. Render Medicines
                 medicinesGrid.innerHTML = ''; 
                 
                 if (data.medicines && data.medicines.length > 0) {
                     data.medicines.forEach((med, index) => {
                         const confScore = med.confidence || 0;
+                        const shortUse = med.info && med.info.uses ? med.info.uses : "Details in summary.";
+                        const dosage = med.info && med.info.dosage ? med.info.dosage : "See AI Summary";
+                        const warnings = med.info && med.info.warnings ? med.info.warnings : "Consult a doctor";
                         
                         // Confidence Logic
                         let badgeClass = 'badge-low';
@@ -693,30 +1007,44 @@
                         
                         if(confScore >= 85) { 
                             badgeClass = 'badge-high'; 
-                            badgeText = '🟢 High';
+                            badgeText = '🟢 High Confidence';
                             barColor = 'linear-gradient(90deg, #10b981, #0ea5e9)'; 
                         }
                         else if(confScore >= 70) { 
                             badgeClass = 'badge-med'; 
-                            badgeText = '🟡 Medium';
+                            badgeText = '🟡 Medium Confidence';
                             barColor = 'linear-gradient(90deg, #f59e0b, #eab308)'; 
                         }
 
-                        // Stagger delay based on index
                         const delay = 0.1 + (index * 0.1);
-                        
                         const card = document.createElement('div');
                         card.className = `medicine-card stagger-anim`;
                         card.style.animationDelay = `${delay}s`;
                         
                         card.innerHTML = `
                             <div class="med-header">
-                                <div class="med-name">💊 ${med.name}</div>
+                                <div class="med-name">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                    ${med.name}
+                                </div>
                                 <div class="med-badge ${badgeClass}">${badgeText}</div>
                             </div>
+                            <div class="med-use-snippet">${shortUse}</div>
+                            
+                            <div class="med-details">
+                                <div class="med-detail-item">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                                    <span><strong>Dosage:</strong> ${dosage}</span>
+                                </div>
+                                <div class="med-detail-item med-detail-warning">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                    <span><strong>Warning:</strong> ${warnings}</span>
+                                </div>
+                            </div>
+
                             <div class="confidence-wrapper">
                                 <div class="confidence-header">
-                                    <span>Accuracy</span>
+                                    <span>Match Accuracy</span>
                                     <span>${confScore}%</span>
                                 </div>
                                 <div class="progress-bar-bg">
@@ -726,7 +1054,6 @@
                         `;
                         medicinesGrid.appendChild(card);
 
-                        // Trigger animation for progress bar slightly after insertion
                         setTimeout(() => {
                             const fill = card.querySelector('.progress-bar-fill');
                             fill.style.width = `${confScore}%`;
@@ -736,7 +1063,7 @@
                     medicinesGrid.innerHTML = `<p class="stagger-anim" style="animation-delay: 0.1s; color: var(--text-muted); grid-column: 1/-1;">No known medicines confidently detected in this scan.</p>`;
                 }
 
-                // 3. Optional: Render LLM Explanation if present
+                // 2. Render AI Summary
                 if (data.explanation) {
                     explanationText.innerHTML = data.explanation.replace(/\n/g, '<br>');
                     explanationContainer.style.display = 'block';
@@ -744,10 +1071,21 @@
                     explanationContainer.style.display = 'none';
                 }
 
-                // Show the results section
+                // 3. Render Raw Text with Highlights
+                let rawText = data.text || data.extracted_text || "No legible text found.";
+                let safeText = rawText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                
+                if (data.medicines && data.medicines.length > 0) {
+                    const sortedMeds = [...data.medicines].sort((a,b) => b.name.length - a.name.length);
+                    sortedMeds.forEach(med => {
+                        const regex = new RegExp(`(${med.name})`, 'gi');
+                        safeText = safeText.replace(regex, '<span class="highlight-med">$1</span>');
+                    });
+                }
+                rawTextContent.innerHTML = safeText;
+
                 resultsSection.style.display = 'block';
                 
-                // Scroll to results smoothly
                 setTimeout(() => {
                     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 100);
@@ -757,21 +1095,24 @@
             function saveHistory(data) {
                 let history = JSON.parse(localStorage.getItem('medilens_history') || '[]');
                 
-                const snippet = data.extracted_text 
-                    ? data.extracted_text.replace(/\n/g, ' ').substring(0, 40) + '...' 
+                const rawText = data.text || data.extracted_text || '';
+                const snippet = rawText 
+                    ? rawText.replace(/\n/g, ' ').substring(0, 45) + '...' 
                     : 'No legible text';
                 
                 const count = data.medicines ? data.medicines.length : 0;
                 const now = new Date();
                 
                 history.unshift({
+                    id: Date.now(),
                     date: now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
                     snippet: snippet,
-                    count: count
+                    count: count,
+                    fullData: data // Storing complete payload for seamless reloading
                 });
                 
-                // Keep only last 3
-                history = history.slice(0, 3);
+                // Truncate to save localStorage quota (keep last 3 scans)
+                history = history.slice(0, 3); 
                 localStorage.setItem('medilens_history', JSON.stringify(history));
                 
                 renderHistory();
@@ -789,22 +1130,42 @@
                 historyList.innerHTML = '';
                 
                 history.forEach((item, index) => {
+                    const isRecent = index === 0 ? 'recent' : '';
                     const delay = index * 0.1;
-                    historyList.innerHTML += `
-                        <div class="history-item stagger-anim" style="animation-delay: ${delay}s">
-                            <div class="history-info">
-                                <div class="history-meds">${item.count} Medicine(s) Found</div>
-                                <div class="history-date">${item.date}</div>
-                            </div>
-                            <div class="history-snippet">"${item.snippet}"</div>
+                    
+                    const historyItemEl = document.createElement('div');
+                    historyItemEl.className = `history-item stagger-anim ${isRecent}`;
+                    historyItemEl.style.animationDelay = `${delay}s`;
+                    historyItemEl.innerHTML = `
+                        <div class="history-info">
+                            <div class="history-meds">${item.count} Medicine(s) Found</div>
+                            <div class="history-date">${item.date}</div>
                         </div>
+                        <div class="history-snippet">"${item.snippet}"</div>
                     `;
+                    
+                    // Click to reload specific past scan
+                    historyItemEl.addEventListener('click', () => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        resultsSection.style.display = 'none';
+                        // Small timeout to allow smooth scrolling and visual reset
+                        setTimeout(() => {
+                            renderResults(item.fullData);
+                        }, 300);
+                    });
+
+                    historyList.appendChild(historyItemEl);
                 });
             }
 
+            clearHistoryBtn.addEventListener('click', () => {
+                localStorage.removeItem('medilens_history');
+                renderHistory();
+            });
+
             function showError(msg) {
-                errorMsg.textContent = msg;
-                errorMsg.style.display = 'block';
+                errorText.textContent = msg;
+                errorMsg.style.display = 'flex';
             }
 
             function hideError() {
