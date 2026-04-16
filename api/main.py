@@ -9,6 +9,14 @@ from fastapi.staticfiles import StaticFiles
 from core.ocr import extract_text
 from core.matcher import detect_medicines
 from llm.explainer import generate_explanation
+from fastapi.responses import FileResponse
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+@app.get("/")
+def serve_home():
+    return FileResponse(BASE_DIR / "frontend" / "index.html")
 
 app = FastAPI(title="MediLens AI")
 
@@ -20,7 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app.mount("/static", StaticFiles(directory=BASE_DIR / "frontend"), name="static")
 
 @app.get("/")
 async def serve_frontend():
