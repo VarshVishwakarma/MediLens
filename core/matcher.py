@@ -1,160 +1,113 @@
-import json
-import re
-import logging
-from typing import List, Dict, Any
+import os
+import time
+import requests
 
-from rapidfuzz import fuzz
+def easyocr_api(image_path):
+    api_key = os.getenv("EASYOCR_API_KEY")
+    if not api_key:
+        print("Missing EASYOCR_API_KEY environment variable.")
+        return ""
 
-logger = logging.getLogger(__name__)
+    start = time.time()
 
-class MedicineMatcher:
-    """
-    An advanced, production-grade medicine name matching engine.
-    Utilizes multi-strategy fuzzy matching, sliding n-gram windows,
-    and OCR-specific text preprocessing to detect medicines in noisy text.
-    """
+    try:
+        with open(image_path, "rb") as image_file:
+            for _ in range(2):
+                if time.time() - start > 12:
+                    print("OCR taking too long → aborting")
+                    return ""
+                    
+                try:
+                    # Seek to beginning in case this is a retry to prevent sending an empty payload
+                    image_file.seek(0)
+                    
+                    response = requests.post(
+                        "https://app.easyocr.es/api/v1/ocr/file",
+                        headers={"X-API-Key": api_key},
+                        files={"file": image_file},
+                        data={"structure": "false"},
+                        timeout=10
+                    )
 
-    def __init__(self, json_path: str = "data/medicines.json"):
-        """
-        Initializes the matcher, loads the medicine database, and 
-        pre-compiles normalized search terms for sub-millisecond matching.
-        """
-        self.medicines = self._load_medicines(json_path)
-        self._compile_search_terms()
+                    if response.status_code != 200:
+                        print("EasyOCR HTTP Error:", response.text)
+                        return ""
 
-    def _load_medicines(self, json_path: str) -> Dict[str, Any]:
-        """Loads the medicine JSON dataset safely with a built-in fallback."""
-        try:
-            with open(json_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            logger.warning(f"Failed to load {json_path} ({e}). Using default fallback dataset.")
-            return {
-                "paracetamol": {
-                    "aliases": ["acetaminophen", "calpol", "dolo"],
-                    "category": "analgesic"
-                },
-                "ibuprofen": {
-                    "aliases": ["brufen", "advil"],
-                    "category": "nsaid"
-                },
-                "amoxicillin": {
-                    "aliases": ["amoxil", "trimox", "moxatag"],
-                    "category": "antibiotic"
-                }
-            }
+                    result = response.json()
+                    
+                    print("STATUS:", result.get("status"))
+                    print("FULL API RESPONSE:", result)
+                    
+                    if result.get("status") != "success":
+                        print("EasyOCR API Failed:", result)
+                        return ""
 
-    def _compile_search_terms(self):
-        """Normalizes and deduplicates all primary names and aliases at startup."""
-        self.search_map = {}
-        for primary_name, data in self.medicines.items():
-            aliases = data.get("aliases", [])
-            terms = [primary_name] + aliases
+                    text = ""
+
+                    # Try direct
+                    if isinstance(result, dict):
+                        text = result.get("text", "")
+
+                    # Try nested common patterns
+                    if not text:
+                        if "data" in result:
+                            if isinstance(result["data"], dict):
+                                text = result["data"].get("text", "")
+                            else:
+                                text = str(result["data"])
+                        elif "result" in result:
+                            text = str(result["result"])
+                        elif "structured_data" in result:
+                            text = str(result["structured_data"])
+
+                    print("RAW OCR OUTPUT:", text)
+
+                    # TEMPORARY TEST HARDCODE (Uncomment below to confirm pipeline without API)
+                    # return "paracetamol tablets ip 500 mg"
+
+                    return text.lower().strip()[:1000]
+                    
+                except requests.exceptions.RequestException:
+                    print("Retrying OCR...")
+                    time.sleep(1)
+                except Exception as e:
+                    print(f"EasyOCR API Exception: {e}")
+                    return ""
+                    
+    except Exception as e:
+        print(f"File handling exception: {e}")
+        return ""
             
-            # Reference terms don't get aggressive OCR letter replacements
-            clean_terms = list(set([self.preprocess_text(t, is_query=False) for t in terms if t]))
-            self.search_map[primary_name] = clean_terms
+    return ""
 
-    def preprocess_text(self, text: str, is_query: bool = True) -> str:
-        """
-        Cleans text: lowercases, removes special chars, normalizes spaces.
-        If is_query=True, corrects common OCR substitutions (0->o, 1->l, 5->s).
-        """
-        if not text:
-            return ""
-        
-        text = text.lower()
-        text = re.sub(r'[^a-z0-9\s]', ' ', text)
-        
-        if is_query:
-            # Aggressive OCR character correction for noisy input
-            text = text.translate(str.maketrans('015', 'ols'))
-            
-        text = re.sub(r'\s+', ' ', text).strip()
-        return text
-
-    def _get_sliding_windows(self, words: List[str], max_n: int = 4) -> List[str]:
-        """Generates n-gram chunks from the text to catch fragmented words."""
-        windows = []
-        for n in range(1, max_n + 1):
-            windows.extend([" ".join(words[i:i+n]) for i in range(len(words) - n + 1)])
-        return windows
-
-    def match(self, text: str, threshold: float = 65.0, top_k: int = 5) -> List[Dict[str, Any]]:
-        """
-        Executes a multi-strategy matching pipeline (Partial, Token, Sliding Window).
-        Filters by dynamic thresholds, deduplicates, and ranks by confidence.
-        """
-        if not text:
-            return []
-
-        clean_text = self.preprocess_text(text, is_query=True)
-        spaceless_text = clean_text.replace(" ", "")
-        words = clean_text.split()
-        
-        # Generate sliding windows (1 to 4 words) for localized matching
-        windows = self._get_sliding_windows(words, max_n=4)
-        
-        results = {}
-
-        for primary_name, terms in self.search_map.items():
-            best_score = 0.0
-            best_match_type = ""
-            best_fragment = ""
-
-            for term in terms:
-                # 1. Global Multi-Strategy Scoring
-                strategies = [
-                    (fuzz.partial_ratio(term, clean_text), "partial_ratio", clean_text),
-                    (fuzz.token_set_ratio(term, clean_text), "token_set", clean_text),
-                    (fuzz.token_sort_ratio(term, clean_text), "token_sort", clean_text)
-                ]
-                
-                # 2. Spaceless Strategy (Captures extreme spacing like "p a r a c e t a m o l")
-                term_spaceless = term.replace(" ", "")
-                if len(term_spaceless) >= 4:
-                    spaceless_score = fuzz.partial_ratio(term_spaceless, spaceless_text)
-                    strategies.append((spaceless_score, "spaceless_partial", spaceless_text))
-
-                # 3. Sliding Window Strategy (Captures localized broken chunks)
-                for window in windows:
-                    strategies.extend([
-                        (fuzz.ratio(term, window), "window_ratio", window),
-                        (fuzz.token_sort_ratio(term, window), "window_token_sort", window)
-                    ])
-
-                # Identify the highest scoring strategy for this specific term
-                for score, match_type, fragment in strategies:
-                    if score > best_score:
-                        best_score = score
-                        best_match_type = match_type
-                        best_fragment = fragment
-
-            # Dynamic Threshold Filter (Ignore matches below the minimum threshold)
-            if best_score >= threshold:
-                results[primary_name] = {
-                    "name": primary_name,
-                    "confidence": round(best_score, 2),
-                    "match_type": best_match_type,
-                    "matched_fragment": best_fragment,
-                    "category": self.medicines[primary_name].get("category", "unknown")
-                }
-
-        # Deduplicate, rank descending by confidence, and truncate to top_k
-        sorted_results = sorted(results.values(), key=lambda x: x["confidence"], reverse=True)
-        return sorted_results[:top_k]
-
-# ==============================================================================
-# Execution Test Block
-# ==============================================================================
-if __name__ == "__main__":
-    matcher = MedicineMatcher()
+def extract_text(image_path):
+    start_time = time.time()
+    print("Using EasyOCR API")
     
-    # Simulating severe OCR noise and broken spacing
-    test_text = "Take p a r a c e t a m 0 l s00mg twice daily and Ibu profen if pain persists. Also taking am0xil."
-    
-    print(f"Raw Input: '{test_text}'\n")
-    matches = matcher.match(test_text, threshold=65.0)
-    
-    print("Detected Medicines:")
-    print(json.dumps(matches, indent=2))
+    text = easyocr_api(image_path)
+    source = "easyocr_api"
+
+    if not text or len(text) < 10:
+        return {
+            "text": "",
+            "source": source,
+            "confidence": "low"
+        }
+
+    valid_words = sum(1 for w in text.split() if len(w) > 3)
+
+    if valid_words >= 3:
+        confidence = "high"
+    elif valid_words >= 1:
+        confidence = "medium"
+    else:
+        confidence = "low"
+
+    print(f"OCR length: {len(text)}")
+    print(f"Processing time: {time.time() - start_time:.2f} sec")
+
+    return {
+        "text": text,
+        "source": source,
+        "confidence": confidence
+    }
