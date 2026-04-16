@@ -80,7 +80,7 @@ async def scan_prescription(image: UploadFile = File(...)):
       1. Save uploaded image to temp file
       2. Run OCR
       3. Detect medicines via fuzzy matcher
-      4. Generate LLM explanation
+      4. Hybrid Logic (DB vs LLM Fallback)
       5. Return structured result
     """
     start_time = time.time()
@@ -93,58 +93,66 @@ async def scan_prescription(image: UploadFile = File(...)):
             temp_file.write(await image.read())
             temp_path = temp_file.name
 
-        # Step 2: OCR
+        # Extract text
         ocr_result = extract_text(temp_path)
         text = ocr_result.get("text", "") if isinstance(ocr_result, dict) else ocr_result
 
-        # Step 3: Medicine detection
+        # Step 2: Detect medicines
         medicines = detect_medicines(text)
 
-        # Step 4: Hybrid LLM explanation
+        # Step 3: Load database
+        med_db = get_medicines()
+        instructions = get_instructions()
+
+        # Step 4: Core Logic
         summary = ""
-        
-        if not medicines:
-            # CASE 3 (NO MEDICINE)
-            summary = "No medicines detected. Please upload a clearer image."
-        else:
-            med_db = get_medicines()
-            instructions = get_instructions()
+        fallback_used = False
 
-            top_med = medicines[0]
-            med_name_key = top_med["name"].lower()
-            
-            if med_db.get(med_name_key):
-                # CASE 1 (FOUND)
-                summary = generate_explanation(
-                    medicine_name=med_name_key,
-                    medicine_info=med_db.get(med_name_key),
-                    instructions=instructions,
-                    confidence=top_med.get("level", "high")
-                )
+        if medicines:
+            med = medicines[0]
+
+            # CASE 1 — MEDICINE FOUND (HIGH CONFIDENCE)
+            if med.get("confidence", 0) >= 75:
+                med_name = med["name"].lower()
+                med_info = med_db.get(med_name)
+
+                if med_info:
+                    summary = generate_explanation(
+                        medicine_name=med_name,
+                        medicine_info=med_info,
+                        instructions=instructions,
+                        confidence=med.get("level", "high")
+                    )
+                # CASE 2 — NOT IN DB
+                else:
+                    fallback_used = True
+                    summary = generate_fallback_explanation(text)
+            # CASE 2 — LOW CONFIDENCE
             else:
-                # CASE 2 (NOT FOUND)
-                summary = generate_fallback_explanation(medicine_name=med_name_key)
-
-        # Step 5: Confidence
-        confidence = "high" if medicines else "low"
+                fallback_used = True
+                summary = generate_fallback_explanation(text)
+        # CASE 3 — NO MEDICINES DETECTED
+        else:
+            fallback_used = True
+            summary = generate_fallback_explanation(text)
 
         return {
             "success": True,
-            "text": text,
             "medicines": medicines,
             "summary": summary,
-            "confidence": confidence,
+            "fallback": fallback_used,
+            "ocr_text": text,
+            "confidence": "high" if not fallback_used else "low",
             "processing_time": round(time.time() - start_time, 2)
         }
 
     except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "error": str(e)
-            }
-        )
+        return {
+            "success": False,
+            "error": str(e),
+            "medicines": [],
+            "summary": "Something went wrong. Please try again."
+        }
 
     finally:
         if temp_path and os.path.exists(temp_path):
