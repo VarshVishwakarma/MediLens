@@ -16,41 +16,43 @@ def detect_medicines(text: str) -> list:
         
     # STEP 2 — TOKENIZE
     words = set(text.split())
+    
+    # STEP 3 — LOAD DATABASE
     med_db = get_medicines()
     matches = []
     
-    # STEP 3 — MULTI-LAYER MATCHING
+    # STEP 4 — MATCHING LOGIC (CORE)
     for med_name, med_data in med_db.items():
         med_lower = med_name.lower()
         aliases = [alias.lower() for alias in med_data.get("aliases", [])]
         
         confidence = 0.0
         
-        # Check direct match for name or aliases
-        if med_lower in text or any(alias in text for alias in aliases):
-            confidence = 100.0
-        else:
-            fuzzy_conf = fuzz.partial_ratio(med_lower, text)
-            has_token = any(token in words for token in med_lower.split())
+        # 1. DIRECT MATCH
+        if med_lower in text:
+            confidence = max(confidence, 100.0)
             
-            # Also check if any tokens of aliases are in words, or if aliases have a fuzzy match
-            for alias in aliases:
-                alias_fuzzy = fuzz.partial_ratio(alias, text)
-                if alias_fuzzy > fuzzy_conf:
-                    fuzzy_conf = alias_fuzzy
-                if any(token in words for token in alias.split()):
-                    has_token = True
-            
-            if has_token:
-                confidence = max(85.0, fuzzy_conf)
-            else:
-                confidence = fuzzy_conf
+        # 2. ALIAS MATCH
+        for alias in aliases:
+            if alias in text:
+                confidence = max(confidence, 90.0)
                 
-        # STEP 4 — DYNAMIC THRESHOLD
-        if confidence >= 60:
-            if confidence >= 90:
+        # 3. TOKEN MATCH & 4. FUZZY MATCH
+        terms_to_check = [med_lower] + aliases
+        for term in terms_to_check:
+            term_tokens = term.split()
+            if any(token in words for token in term_tokens):
+                confidence = max(confidence, 85.0)
+                
+            fuzzy_conf = fuzz.partial_ratio(term, text)
+            confidence = max(confidence, fuzzy_conf)
+                
+        # STEP 5 — CONFIDENCE FILTERING
+        if confidence >= 75.0:
+            # STEP 6 — ASSIGN LEVEL
+            if confidence >= 90.0:
                 level = "high"
-            elif confidence >= 80:
+            elif confidence >= 80.0:
                 level = "medium"
             else:
                 level = "low"
@@ -61,6 +63,6 @@ def detect_medicines(text: str) -> list:
                 "level": level
             })
             
-    # STEP 5 — LIMIT RESULTS
+    # STEP 7 — SORT & LIMIT
     matches.sort(key=lambda x: x["confidence"], reverse=True)
     return matches[:3]
