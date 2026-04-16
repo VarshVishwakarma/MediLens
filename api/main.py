@@ -2,10 +2,8 @@ import os
 import time
 import json
 import logging
-import re
-import cv2
-import pytesseract
 from pathlib import Path
+
 from rapidfuzz import fuzz
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +11,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from llm.explainer import generate_explanation
+from core.ocr import extract_text
 
 # ==============================================================================
 # CONFIGURATION & LOGGING
@@ -86,34 +85,6 @@ def get_instructions():
     return _instructions
 
 # ==============================================================================
-# FAST OCR PIPELINE
-# ==============================================================================
-def extract_text(image_path: str) -> str:
-    start_time = time.time()
-    try:
-        img = cv2.imread(image_path)
-        if img is None:
-            return ""
-        
-        # 1. FORCE SMALL IMAGE SIZE
-        img = cv2.resize(img, (500, 500))
-        
-        # 2. SIMPLE PREPROCESSING
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
-        # 3. SINGLE PASS TESSERACT
-        text = pytesseract.image_to_string(gray, config="--oem 3 --psm 7")
-        
-        # 4. CLEAN OUTPUT
-        text = re.sub(r'\s+', ' ', text).strip().lower()[:1000]
-        
-        logger.info(f"OCR time: {time.time() - start_time:.2f} sec")
-        return text
-    except Exception as e:
-        logger.error(f"OCR Error: {e}")
-        return ""
-
-# ==============================================================================
 # MEDICINE DETECTION
 # ==============================================================================
 def detect_medicines(text: str):
@@ -174,7 +145,11 @@ async def scan(file: UploadFile = File(...)):
         with open(temp_file, "wb") as buffer:
             buffer.write(await file.read())
 
-        text = extract_text(temp_file)
+        ocr_result = extract_text(temp_file)
+        
+        # Safely extract text whether response is a dictionary or a string
+        text = ocr_result.get("text", "") if isinstance(ocr_result, dict) else ocr_result
+        
         detected = detect_medicines(text)
         
         explanation = ""
@@ -217,6 +192,7 @@ async def scan(file: UploadFile = File(...)):
         }
         
     except Exception as e:
+        logger.error(f"Error during scan: {e}")
         return {"error": str(e)}
         
     finally:
