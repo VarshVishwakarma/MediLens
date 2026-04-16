@@ -9,7 +9,8 @@ def get_medicines() -> dict:
     if _medicines_cache is None:
         try:
             with open("data/medicines.json", "r", encoding="utf-8") as f:
-                _medicines_cache = json.load(f)
+                data = json.load(f)
+                _medicines_cache = {str(k).lower(): v for k, v in data.items()}
         except Exception:
             _medicines_cache = {}
     return _medicines_cache
@@ -19,7 +20,8 @@ def get_instructions() -> dict:
     if _instructions_cache is None:
         try:
             with open("data/instructions.json", "r", encoding="utf-8") as f:
-                _instructions_cache = json.load(f)
+                data = json.load(f)
+                _instructions_cache = {str(k).lower(): v for k, v in data.items()}
         except Exception:
             _instructions_cache = {}
     return _instructions_cache
