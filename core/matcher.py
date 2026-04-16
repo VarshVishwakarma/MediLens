@@ -1,57 +1,52 @@
-import json
 from rapidfuzz import fuzz
+from core.loader import get_medicines
 
-def load_medicines():
-    try:
-        with open("medicines.json", "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-med_db = load_medicines()
-
-def detect_medicines(text: str):
+def detect_medicines(text: str) -> list:
     if not text:
         return []
-
-    text_lower = text.lower().strip()
-    if not text_lower:
+        
+    text = text.lower().strip()
+    if not text:
         return []
-
-    results = []
-
-    for med_name in med_db.keys():
+        
+    med_db = get_medicines()
+    matches = []
+    
+    for med_name in med_db:
         med_lower = med_name.lower()
-
-        # 🥇 DIRECT MATCH (MOST IMPORTANT)
-        if med_lower in text_lower:
-            results.append({
-                "name": med_name.capitalize(),
-                "confidence": 100,
-                "level": "high"
-            })
-            continue
-
-        # 🥈 FUZZY MATCH
-        score = fuzz.token_set_ratio(med_lower, text_lower)
-
-        # 🥉 PARTIAL WORD MATCH (handles broken OCR)
-        if any(part in text_lower for part in med_lower.split()):
-            score = max(score, 85)
-
-        # 🔻 LOWER THRESHOLD
-        if score >= 60:
-            if score >= 90:
+        
+        med_len = len(med_lower)
+        if med_len <= 5:
+            threshold = 75
+        elif med_len <= 8:
+            threshold = 70
+        else:
+            threshold = 65
+            
+        confidence = 0.0
+        
+        if med_lower in text:
+            confidence = 100.0
+        else:
+            confidence = fuzz.token_set_ratio(med_lower, text)
+            
+            parts = med_lower.split()
+            if len(parts) > 1 and any(part in text for part in parts):
+                confidence = min(100.0, confidence + 5.0)
+                
+        if confidence >= threshold:
+            if confidence >= 90:
                 level = "high"
-            elif score >= 75:
+            elif confidence >= 80:
                 level = "medium"
             else:
                 level = "low"
-
-            results.append({
-                "name": med_name.capitalize(),
-                "confidence": round(score, 2),
+                
+            matches.append({
+                "name": med_name,
+                "confidence": round(confidence, 1),
                 "level": level
             })
-
-    return sorted(results, key=lambda x: x["confidence"], reverse=True)[:3]
+            
+    matches.sort(key=lambda x: x["confidence"], reverse=True)
+    return matches[:3]
