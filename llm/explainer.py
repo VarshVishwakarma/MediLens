@@ -7,6 +7,10 @@ def format_section(title, content):
     return f"\n{title}\n{content}\n"
 
 def generate_explanation(medicine_name: str, medicine_info: dict, instructions: dict, confidence: str = "high") -> str:
+    """
+    Generates a structured explanation strictly using the local database.
+    Does NOT use the LLM to prevent hallucinations on known data.
+    """
     try:
         if not medicine_info:
             return "Medicine not found in database. Please consult a healthcare professional."
@@ -19,44 +23,64 @@ def generate_explanation(medicine_name: str, medicine_info: dict, instructions: 
         warnings = medicine_info.get("warnings", "Information not available")
         side_effects = medicine_info.get("side_effects", "Information not available")
         
-        # Build rich output (No LLM needed)
-        fallback_text = f"💊 {medicine_name.capitalize()}\n"
-        fallback_text += format_section("🧾 Uses", uses)
-        fallback_text += format_section("💊 Dosage", dosage)
-        fallback_text += format_section("⚠️ Warnings", warnings)
-        fallback_text += format_section("⚡ Side Effects", side_effects)
-        fallback_text += f"\n🏷️ Category\n{medicine_info.get('type', 'N/A')}\n"
-        fallback_text += "\n⚠️ Always consult a doctor"
+        # Build rich output directly from DB
+        output = f"💊 {medicine_name.capitalize()}\n"
+        output += format_section("🧾 Uses", uses)
+        output += format_section("💊 Dosage", dosage)
+        output += format_section("⚠️ Warnings", warnings)
+        output += format_section("⚡ Side Effects", side_effects)
         
-        api_key = os.getenv("GEMINI_API_KEY")
+        med_type = medicine_info.get("type")
+        if med_type:
+            output += f"\n🏷️ Category\n{med_type}\n"
+            
+        output += "\n⚠️ Always consult a doctor"
         
-        if api_key and confidence in ["high", "medium"]:
-            try:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-pro')
-                
-                instruction_text = instructions.get(medicine_name, "No specific instructions available.")
-                
-                prompt = (
-                    "System: You are a professional medical assistant. "
-                    "Strict instruction: Use ONLY the provided data. Do NOT generate unknown information. "
-                    "Do NOT hallucinate medical facts. Do NOT guess missing fields. "
-                    "Format the information clearly and keep the response under 200 words.\n\n"
-                    f"Data for {medicine_name}:\n"
-                    f"Uses: {uses}\n"
-                    f"Dosage: {dosage}\n"
-                    f"Warnings: {warnings}\n"
-                    f"Side Effects: {side_effects}\n"
-                    f"Instructions: {instruction_text}"
-                )
-                
-                response = model.generate_content(prompt)
-                if response.text:
-                    return response.text.strip()
-            except Exception:
-                return fallback_text
-                
-        return fallback_text
+        return output
 
     except Exception:
         return "Unable to generate explanation at the moment."
+
+def generate_fallback_explanation(medicine_name: str) -> str:
+    """
+    Fallback function that uses the LLM to provide general, safe information 
+    when a medicine is not found in the local database.
+    """
+    fallback_msg = (
+        f"💊 {medicine_name.capitalize()}\n\n"
+        "Medicine not found in local database.\n\n"
+        "⚠️ Please consult a healthcare professional for Uses, Dosage, Warnings, and Side Effects."
+    )
+    
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return fallback_msg
+        
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-pro')
+        
+        prompt = (
+            "System: You are a professional medical assistant. "
+            f"The medicine '{medicine_name}' was not found in our primary database.\n\n"
+            "Please provide general information for this medicine including:\n"
+            "- Uses\n"
+            "- Dosage (if known)\n"
+            "- Warnings\n"
+            "- Side effects\n\n"
+            "STRICT RULES:\n"
+            "1. If you are unsure about ANY field, explicitly state 'may vary' or 'consult a doctor'.\n"
+            "2. Keep the information safe, general, and strictly advisory.\n"
+            "3. Make NO fake claims or definitive medical prescriptions.\n"
+            "4. Format the output clearly with bullet points.\n"
+            "5. Keep the response under 200 words."
+        )
+        
+        response = model.generate_content(prompt)
+        if response.text:
+            return response.text.strip() + "\n\n⚠️ Always consult a doctor"
+            
+        return fallback_msg
+        
+    except Exception:
+        return fallback_msg
