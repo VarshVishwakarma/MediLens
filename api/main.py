@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from core.ocr import extract_text
 from core.matcher import detect_medicines
+from core.loader import get_medicines, get_instructions
 from llm.explainer import generate_explanation
 
 # ==============================================================================
@@ -100,11 +101,23 @@ async def scan_prescription(image: UploadFile = File(...)):
         medicines = detect_medicines(text)
 
         # Step 4: LLM explanation
-        summary = (
-            generate_explanation(medicines)
-            if medicines
-            else "No medicines detected to explain."
-        )
+        summary = "No medicines detected to explain."
+        if medicines:
+            med_db = get_medicines()
+            instructions = get_instructions()
+
+            top_med = medicines[0]
+            med_name_key = top_med["name"].lower()
+            
+            if not med_db.get(med_name_key):
+                summary = "Medicine data not found."
+            else:
+                summary = generate_explanation(
+                    medicine_name=med_name_key,
+                    medicine_info=med_db.get(med_name_key),
+                    instructions=instructions,
+                    confidence=top_med.get("level", "high")
+                )
 
         # Step 5: Confidence
         confidence = "high" if medicines else "low"
