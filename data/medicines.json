@@ -1,287 +1,54 @@
 {
-  "_meta": {
-    "source": "WHO Model List of Essential Medicines (23rd List) & FDA Labels",
-    "version": "4.0.0-PHASE1",
-    "last_updated": "2024-06-15",
-    "dataset_scope": "Phase 1: High-Frequency Essential Medicines (Common OTC, Chronic, Acute)",
-    "disclaimer": "CRITICAL: This database is for informational AI retrieval only. It is NOT a substitute for a doctor's prescription or advice."
-  },
-  "medicines": [
-    {
-      "id": "WHO-ANA-001",
-      "name": "Paracetamol",
-      "aliases": ["Acetaminophen", "Tylenol", "Panadol", "Calpol", "Dolo", "Mapap", "Ofirmev"],
-      "category": "Analgesics / Antipyretics",
-      "uses": "Mild to moderate pain (headache, muscle ache); fever reduction.",
-      "dosage": {
-        "adult": "0.5–1 g every 4–6 hours (max 4 g daily).",
-        "child": "10–15 mg/kg every 4–6 hours (do not exceed 5 doses in 24 hours)."
-      },
-      "how_to_take": "Oral: Swallow with water. Can be taken on empty stomach. Liquid forms must be measured with a dosing syringe.",
-      "side_effects": "Rare. Serious liver damage can occur with overdose or if taken with alcohol.",
-      "warnings": "Do not exceed the recommended dose. Check other medicines (cold/flu) for paracetamol content to avoid accidental overdose.",
-      "pregnancy": "Category B. Generally considered safe if used as directed.",
-      "source": "WHO EML 2023 / DailyMed"
-    },
-    {
-      "id": "WHO-NSAID-001",
-      "name": "Ibuprofen",
-      "aliases": ["Advil", "Motrin", "Brufen", "Nurofen", "Midol", "NeoProfen"],
-      "category": "NSAID (Non-steroidal anti-inflammatory drug)",
-      "uses": "Pain relief, fever reduction, inflammation (arthritis, injury, menstrual cramps).",
-      "dosage": {
-        "adult": "200–400 mg every 4–6 hours (max 3200 mg/day under supervision, 1200 mg OTC).",
-        "child": "5–10 mg/kg every 6–8 hours."
-      },
-      "how_to_take": "Oral: Take with food or milk to prevent stomach upset.",
-      "side_effects": "Stomach pain, heartburn, dizziness, risk of bleeding, kidney stress.",
-      "warnings": "Avoid if you have a history of stomach ulcers, GI bleeding, or kidney problems. May increase heart attack risk.",
-      "pregnancy": "Category C (Avoid in 3rd trimester - Category D).",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-ABX-001",
-      "name": "Amoxicillin",
-      "aliases": ["Amoxil", "Moxatag", "Trimox"],
-      "category": "Antibiotic (Penicillin)",
-      "uses": "Bacterial infections including pneumonia, dental abscesses, ear infections, and UTIs.",
-      "dosage": {
-        "adult": "250–500 mg every 8 hours or 875 mg every 12 hours.",
-        "child": "20–40 mg/kg/day in divided doses."
-      },
-      "how_to_take": "Oral: Can be taken with or without food. Complete the full course even if feeling better.",
-      "side_effects": "Nausea, vomiting, diarrhea, skin rash.",
-      "warnings": "Do not use if allergic to penicillin. Immediate medical attention needed for signs of anaphylaxis (swelling, trouble breathing).",
-      "pregnancy": "Category B. Generally considered safe.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-DIA-001",
-      "name": "Metformin",
-      "aliases": ["Glucophage", "Riomet", "Fortamet", "Glumetza"],
-      "category": "Antidiabetic (Biguanide)",
-      "uses": "First-line treatment for Type 2 diabetes mellitus to control blood sugar.",
-      "dosage": {
-        "adult": "Initial: 500 mg twice daily with meals. Maintenance: up to 2000–2550 mg daily.",
-        "child": "Consult specialist (Approved for 10+ years in some regions)."
-      },
-      "how_to_take": "Oral: Take with meals to reduce stomach upset/nausea.",
-      "side_effects": "Nausea, metallic taste, diarrhea, bloating.",
-      "warnings": "Risk of lactic acidosis (rare but serious). Stop temporarily before iodinated contrast scans.",
-      "pregnancy": "Category B. Generally accepted.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-CVS-001",
-      "name": "Lisinopril",
-      "aliases": ["Zestril", "Prinivil", "Qbrelis"],
-      "category": "ACE Inhibitor",
-      "uses": "Hypertension (high blood pressure), heart failure, post-heart attack recovery.",
-      "dosage": {
-        "adult": "Initial: 10 mg once daily. Maintenance: 20–40 mg daily.",
-        "child": "Not typically recommended without specialist advice."
-      },
-      "how_to_take": "Oral: Take at the same time each day.",
-      "side_effects": "Dry persistent cough, dizziness, headache, fatigue, hyperkalemia (high potassium).",
-      "warnings": "Discontinue as soon as pregnancy is detected (Boxed Warning). Can cause angioedema.",
-      "pregnancy": "Category D. Do NOT use.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-CVS-002",
-      "name": "Atorvastatin",
-      "aliases": ["Lipitor", "Atorva"],
-      "category": "Statin (HMG-CoA reductase inhibitor)",
-      "uses": "Lowers high cholesterol (LDL) and triglycerides; reduces risk of stroke/heart attack.",
-      "dosage": {
-        "adult": "10–80 mg once daily.",
-        "child": "10 mg daily (only for specific genetic lipid conditions)."
-      },
-      "how_to_take": "Oral: Take at any time of day, with or without food. Consistent timing preferred.",
-      "side_effects": "Muscle pain, weakness, liver enzyme changes, digestive upset.",
-      "warnings": "Avoid large amounts of grapefruit juice. Monitor for unexplained muscle pain/weakness (rhabdomyolysis).",
-      "pregnancy": "Category X. Do NOT use.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-ALL-001",
-      "name": "Cetirizine",
-      "aliases": ["Zyrtec", "Reactine", "Aller-Tec"],
-      "category": "Antihistamine (Second Generation)",
-      "uses": "Hay fever, seasonal allergy symptoms, hives (urticaria).",
-      "dosage": {
-        "adult": "10 mg once daily.",
-        "child": "2.5–5 mg once daily depending on age/weight."
-      },
-      "how_to_take": "Oral: Swallow with water. One tablet a day.",
-      "side_effects": "Drowsiness (less than 1st gen), dry mouth, fatigue.",
-      "warnings": "Use caution when driving or operating machinery until you know how it affects you.",
-      "pregnancy": "Category B. Generally considered safe.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-ABX-002",
-      "name": "Azithromycin",
-      "aliases": ["Zithromax", "Z-Pak", "Azithrocin"],
-      "category": "Antibiotic (Macrolide)",
-      "uses": "Respiratory infections (bronchitis), ear infections, skin infections, STIs.",
-      "dosage": {
-        "adult": "500 mg day 1, then 250 mg days 2–5 (Z-Pak regimen).",
-        "child": "10 mg/kg day 1, then 5 mg/kg days 2–5."
-      },
-      "how_to_take": "Oral: Take with or without food. Do not take aluminum/magnesium antacids simultaneously.",
-      "side_effects": "Diarrhea, nausea, abdominal pain.",
-      "warnings": "Can cause heart rhythm changes (QT prolongation). Caution in liver disease.",
-      "pregnancy": "Category B. Generally safe.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-GI-001",
-      "name": "Omeprazole",
-      "aliases": ["Prilosec", "Losec", "Omez"],
-      "category": "Proton Pump Inhibitor (PPI)",
-      "uses": "Gastroesophageal reflux disease (GERD), acid reflux, stomach ulcers.",
-      "dosage": {
-        "adult": "20 mg once daily before a meal (usually breakfast).",
-        "child": "Consult specialist (weight-based)."
-      },
-      "how_to_take": "Oral: Take on an empty stomach, at least 30-60 mins before breakfast.",
-      "side_effects": "Headache, stomach pain, gas, nausea.",
-      "warnings": "Long-term use (>1 year) may weaken bones or cause B12/Magnesium deficiency.",
-      "pregnancy": "Category C. Use only if clearly needed.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-CVS-003",
-      "name": "Amlodipine",
-      "aliases": ["Norvasc", "Amlo", "Istin"],
-      "category": "Calcium Channel Blocker",
-      "uses": "Hypertension (high blood pressure), chronic stable angina.",
-      "dosage": {
-        "adult": "5 mg once daily (max 10 mg).",
-        "child": "2.5–5 mg once daily (6–17 years)."
-      },
-      "how_to_take": "Oral: Take at the same time every day.",
-      "side_effects": "Swelling of ankles/feet (edema), flushing, palpitations, dizziness.",
-      "warnings": "Tell doctor if you have liver disease. Do not stop abruptly for angina.",
-      "pregnancy": "Category C.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-THY-001",
-      "name": "Levothyroxine",
-      "aliases": ["Synthroid", "Levoxyl", "Eltroxin", "Euthyrox"],
-      "category": "Thyroid Hormone",
-      "uses": "Hypothyroidism (underactive thyroid).",
-      "dosage": {
-        "adult": "Usually 25–200 mcg daily (highly individualized based on TSH).",
-        "child": "Dosed by body surface area/age."
-      },
-      "how_to_take": "Oral: Take in the morning on an empty stomach, 30-60 mins before breakfast. Separate from calcium/iron by 4 hours.",
-      "side_effects": "Hair loss (temporary), appetite change. Overdose causes hyperthyroid symptoms (racing heart, shaking).",
-      "warnings": "Do not use for weight loss. Narrow therapeutic index requires regular blood tests.",
-      "pregnancy": "Category A. Safe and often necessary to increase dose during pregnancy.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-RES-001",
-      "name": "Albuterol",
-      "aliases": ["Salbutamol", "Ventolin", "ProAir", "Proventil"],
-      "category": "Bronchodilator (Short-acting Beta Agonist)",
-      "uses": "Asthma attacks, bronchospasm, COPD, exercise-induced asthma.",
-      "dosage": {
-        "adult": "1–2 puffs every 4–6 hours as needed.",
-        "child": "1–2 puffs as needed (use spacer if young)."
-      },
-      "how_to_take": "Inhalation: Shake well. Exhale, seal lips, inhale while puffing. Hold breath 10s.",
-      "side_effects": "Tremors (shaking hands), nervousness, rapid heart rate.",
-      "warnings": "Seek emergency help if inhaler does not relieve breathing difficulty. Do not exceed frequency.",
-      "pregnancy": "Category C.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-PSY-001",
-      "name": "Sertraline",
-      "aliases": ["Zoloft", "Lustral"],
-      "category": "SSRI Antidepressant",
-      "uses": "Depression, panic disorder, OCD, PTSD, social anxiety.",
-      "dosage": {
-        "adult": "50 mg once daily (range 25–200 mg).",
-        "child": "6+ years for OCD only (specialist managed)."
-      },
-      "how_to_take": "Oral: Take at same time daily (morning or evening).",
-      "side_effects": "Nausea, insomnia, dizziness, sexual dysfunction.",
-      "warnings": "Black Box Warning: Increased risk of suicidal thinking in young adults during initiation. Do not stop abruptly.",
-      "pregnancy": "Category C.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-CVS-004",
-      "name": "Hydrochlorothiazide",
-      "aliases": ["Microzide", "Esidrix", "HCTZ"],
-      "category": "Thiazide Diuretic (Water Pill)",
-      "uses": "Hypertension, edema (fluid retention).",
-      "dosage": {
-        "adult": "12.5–50 mg once daily.",
-        "child": "1–2 mg/kg daily."
-      },
-      "how_to_take": "Oral: Take in the morning to avoid night-time urination.",
-      "side_effects": "Frequent urination, electrolyte imbalance (low potassium/sodium), dizziness.",
-      "warnings": "Sulfa allergy cross-reactivity (rare). Monitor electrolytes.",
-      "pregnancy": "Category B.",
-      "source": "WHO EML 2023"
-    },
-    {
-      "id": "WHO-ANA-002",
-      "name": "Gabapentin",
-      "aliases": ["Neurontin", "Gralise"],
-      "category": "Anticonvulsant",
-      "uses": "Nerve pain (postherpetic neuralgia), seizures.",
-      "dosage": {
-        "adult": "300–600 mg three times daily (titrated up).",
-        "child": "Weight based."
-      },
-      "how_to_take": "Oral: Space doses evenly (no more than 12h gap).",
-      "side_effects": "Dizziness, drowsiness, coordination problems.",
-      "warnings": "Risk of respiratory depression if combined with opioids. Suicidal thoughts (rare).",
-      "pregnancy": "Category C.",
-      "source": "WHO EML 2023"
-    }
-  ]
-}
-
-{
   "paracetamol": {
+    "aliases": [
+      "paracetamol",
+      "paracetemol",
+      "paracemeter",
+      "acetaminophen",
+      "dolo",
+      "dolo 650",
+      "calpol",
+      "crocin",
+      "panadol"
+    ],
     "type": "Analgesic / Antipyretic",
     "uses": ["Fever", "Headache", "Body pain", "Mild to moderate pain"],
     "dosage": "500–1000 mg every 4–6 hours",
-    "max_daily_dose": "4000 mg",
     "warnings": [
       "Do not exceed 4g per day",
       "Overdose can cause liver damage",
       "Avoid alcohol"
     ],
-    "side_effects": ["Rare at normal dose", "Liver toxicity (overdose)"],
-    "common_brands": ["Crocin", "Calpol", "Dolo 650"],
-    "category": "OTC"
+    "side_effects": ["Rare at normal dose", "Liver toxicity (overdose)"]
   },
 
   "ibuprofen": {
+    "aliases": [
+      "ibuprofen",
+      "brufen",
+      "advil",
+      "motrin",
+      "ibuprofenn"
+    ],
     "type": "NSAID",
     "uses": ["Pain relief", "Inflammation", "Fever", "Muscle pain"],
     "dosage": "200–400 mg every 6–8 hours",
-    "max_daily_dose": "1200 mg (OTC)",
     "warnings": [
       "Take after food",
       "May cause stomach ulcers",
       "Avoid in kidney disease"
     ],
-    "side_effects": ["Acidity", "Stomach pain", "Dizziness"],
-    "common_brands": ["Brufen", "Advil"],
-    "category": "OTC"
+    "side_effects": ["Acidity", "Stomach pain", "Dizziness"]
   },
 
   "amoxicillin": {
+    "aliases": [
+      "amoxicillin",
+      "amox",
+      "amoxil",
+      "mox",
+      "amoxycillin"
+    ],
     "type": "Antibiotic",
     "uses": ["Bacterial infections", "Respiratory infections", "Ear infections"],
     "dosage": "250–500 mg every 8 hours",
@@ -290,169 +57,102 @@
       "Do not use for viral infections",
       "Allergic reactions possible"
     ],
-    "side_effects": ["Diarrhea", "Nausea", "Skin rash"],
-    "common_brands": ["Mox", "Amoxil"],
-    "category": "Prescription"
+    "side_effects": ["Diarrhea", "Nausea", "Skin rash"]
   },
 
   "azithromycin": {
+    "aliases": [
+      "azithromycin",
+      "azithro",
+      "azee",
+      "zithromax",
+      "azithromicin"
+    ],
     "type": "Antibiotic",
     "uses": ["Respiratory infections", "Throat infections", "Skin infections"],
     "dosage": "500 mg once daily for 3–5 days",
     "warnings": [
       "Complete full course",
-      "May affect heart rhythm",
-      "Avoid misuse"
+      "May affect heart rhythm"
     ],
-    "side_effects": ["Nausea", "Diarrhea"],
-    "common_brands": ["Azee", "Zithromax"],
-    "category": "Prescription"
+    "side_effects": ["Nausea", "Diarrhea"]
   },
 
   "cetirizine": {
+    "aliases": [
+      "cetirizine",
+      "cetirizin",
+      "cetzine",
+      "zyrtec"
+    ],
     "type": "Antihistamine",
     "uses": ["Allergy", "Sneezing", "Runny nose", "Itching"],
     "dosage": "10 mg once daily",
     "warnings": [
       "May cause drowsiness",
-      "Avoid alcohol",
-      "Use caution while driving"
+      "Avoid alcohol"
     ],
-    "side_effects": ["Sleepiness", "Dry mouth"],
-    "common_brands": ["Cetzine", "Zyrtec"],
-    "category": "OTC"
+    "side_effects": ["Sleepiness", "Dry mouth"]
   },
 
   "metformin": {
+    "aliases": [
+      "metformin",
+      "glycomet",
+      "glucophage"
+    ],
     "type": "Antidiabetic",
     "uses": ["Type 2 diabetes control"],
     "dosage": "500–1000 mg twice daily",
     "warnings": [
       "Take with meals",
-      "Monitor kidney function",
-      "Risk of lactic acidosis (rare)"
+      "Monitor kidney function"
     ],
-    "side_effects": ["Diarrhea", "Nausea"],
-    "common_brands": ["Glycomet", "Glucophage"],
-    "category": "Prescription"
+    "side_effects": ["Diarrhea", "Nausea"]
   },
 
   "pantoprazole": {
+    "aliases": [
+      "pantoprazole",
+      "pantocid",
+      "pan 40"
+    ],
     "type": "Proton Pump Inhibitor",
     "uses": ["Acidity", "GERD", "Ulcers"],
     "dosage": "40 mg once daily before food",
     "warnings": [
-      "Long-term use may weaken bones",
-      "Take before meals"
+      "Long-term use may weaken bones"
     ],
-    "side_effects": ["Headache", "Diarrhea"],
-    "common_brands": ["Pantocid", "Pan 40"],
-    "category": "OTC"
-  },
-
-  "dolo 650": {
-    "type": "Analgesic",
-    "uses": ["Fever", "Pain relief"],
-    "dosage": "650 mg every 6 hours",
-    "warnings": [
-      "Contains paracetamol",
-      "Avoid overdose"
-    ],
-    "side_effects": ["Rare"],
-    "common_brands": ["Dolo 650"],
-    "category": "OTC"
-  },
-
-  "crocin": {
-    "type": "Analgesic",
-    "uses": ["Fever", "Pain"],
-    "dosage": "500 mg every 4–6 hours",
-    "warnings": [
-      "Contains paracetamol",
-      "Avoid overdose"
-    ],
-    "side_effects": ["Rare"],
-    "common_brands": ["Crocin"],
-    "category": "OTC"
-  },
-
-  "augmentin": {
-    "type": "Antibiotic",
-    "uses": ["Bacterial infections"],
-    "dosage": "625 mg every 8 hours",
-    "warnings": [
-      "Complete full course",
-      "May cause diarrhea"
-    ],
-    "side_effects": ["Diarrhea", "Nausea"],
-    "common_brands": ["Augmentin"],
-    "category": "Prescription"
+    "side_effects": ["Headache", "Diarrhea"]
   },
 
   "diclofenac": {
+    "aliases": [
+      "diclofenac",
+      "voveran",
+      "diclo"
+    ],
     "type": "NSAID",
     "uses": ["Pain", "Inflammation", "Joint pain"],
     "dosage": "50 mg 2–3 times daily",
     "warnings": [
       "Take after food",
-      "May cause gastric issues",
       "Avoid long-term use"
     ],
-    "side_effects": ["Acidity", "Ulcers"],
-    "common_brands": ["Voveran"],
-    "category": "Prescription"
-  },
-
-  "ranitidine": {
-    "type": "H2 Blocker",
-    "uses": ["Acidity", "Ulcers"],
-    "dosage": "150 mg twice daily",
-    "warnings": [
-      "Use only if prescribed",
-      "Some variants banned in many countries"
-    ],
-    "side_effects": ["Headache", "Constipation"],
-    "common_brands": ["Rantac"],
-    "category": "OTC"
-  },
-
-  "levocetirizine": {
-    "type": "Antihistamine",
-    "uses": ["Allergy", "Cold symptoms"],
-    "dosage": "5 mg once daily",
-    "warnings": [
-      "May cause drowsiness",
-      "Avoid driving"
-    ],
-    "side_effects": ["Sleepiness"],
-    "common_brands": ["Xyzal"],
-    "category": "OTC"
+    "side_effects": ["Acidity", "Ulcers"]
   },
 
   "omeprazole": {
+    "aliases": [
+      "omeprazole",
+      "omez"
+    ],
     "type": "Proton Pump Inhibitor",
     "uses": ["Acidity", "GERD"],
     "dosage": "20 mg once daily",
     "warnings": [
-      "Long-term use risks",
       "Take before food"
     ],
-    "side_effects": ["Headache", "Nausea"],
-    "common_brands": ["Omez"],
-    "category": "OTC"
-  },
-
-  "aspirin": {
-    "type": "NSAID / Antiplatelet",
-    "uses": ["Pain", "Heart protection (low dose)"],
-    "dosage": "75–325 mg daily",
-    "warnings": [
-      "Risk of bleeding",
-      "Avoid in children",
-      "Take after food"
-    ],
-    "side_effects": ["Bleeding", "Stomach irritation"],
-    "common_brands": ["Ecosprin"],
-    "category": "OTC"
+    "side_effects": ["Headache", "Nausea"]
   }
 }
