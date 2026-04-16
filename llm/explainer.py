@@ -1,6 +1,11 @@
 import os
 import google.generativeai as genai
 
+def format_section(title, content):
+    if isinstance(content, list):
+        content = "\n".join([f"• {item}" for item in content])
+    return f"\n{title}\n{content}\n"
+
 def generate_explanation(medicine_name: str, medicine_info: dict, instructions: dict, confidence: str = "high") -> str:
     try:
         if not medicine_info:
@@ -14,14 +19,14 @@ def generate_explanation(medicine_name: str, medicine_info: dict, instructions: 
         warnings = medicine_info.get("warnings", "Information not available")
         side_effects = medicine_info.get("side_effects", "Information not available")
         
-        fallback_text = (
-            f"💊 {medicine_name.capitalize()}\n\n"
-            f"• Uses: {uses}\n"
-            f"• Dosage: {dosage}\n"
-            f"• Warnings: {warnings}\n"
-            f"• Side Effects: {side_effects}\n\n"
-            f"⚠️ Always consult a doctor"
-        )
+        # Build rich output (No LLM needed)
+        fallback_text = f"💊 {medicine_name.capitalize()}\n"
+        fallback_text += format_section("🧾 Uses", uses)
+        fallback_text += format_section("💊 Dosage", dosage)
+        fallback_text += format_section("⚠️ Warnings", warnings)
+        fallback_text += format_section("⚡ Side Effects", side_effects)
+        fallback_text += f"\n🏷️ Category\n{medicine_info.get('type', 'N/A')}\n"
+        fallback_text += "\n⚠️ Always consult a doctor"
         
         api_key = os.getenv("GEMINI_API_KEY")
         
