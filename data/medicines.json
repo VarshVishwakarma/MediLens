@@ -1,55 +1,66 @@
 {
   "paracetamol": {
     "aliases": [
-      "paracetamol",
-      "paracetemol",
-      "paracemeter",
-      "acetaminophen",
-      "dolo",
-      "dolo 650",
-      "calpol",
-      "crocin",
-      "panadol"
+      "paracetamol", "paracetemol", "paracemeter", "paracitamol",
+      "acetaminophen", "dolo", "dolo 650", "calpol", "crocin", "panadol",
+      "paracetamol 500", "paracetamol 650"
     ],
     "type": "Analgesic / Antipyretic",
+    "category": "OTC",
     "uses": ["Fever", "Headache", "Body pain", "Mild to moderate pain"],
     "dosage": "500–1000 mg every 4–6 hours",
+    "max_dose": "4000 mg/day",
     "warnings": [
       "Do not exceed 4g per day",
-      "Overdose can cause liver damage",
-      "Avoid alcohol"
+      "Overdose can cause severe liver damage",
+      "Avoid alcohol while taking this medicine"
     ],
-    "side_effects": ["Rare at normal dose", "Liver toxicity (overdose)"]
+    "side_effects": [
+      "Rare at normal dose",
+      "Liver toxicity in overdose"
+    ],
+    "when_to_avoid": [
+      "Liver disease",
+      "Chronic alcohol use"
+    ],
+    "tips": [
+      "Check cold/flu medicines for hidden paracetamol",
+      "Safe for most people when used correctly"
+    ]
   },
 
   "ibuprofen": {
     "aliases": [
-      "ibuprofen",
-      "brufen",
-      "advil",
-      "motrin",
-      "ibuprofenn"
+      "ibuprofen", "ibuprofenn", "brufen", "advil", "motrin"
     ],
     "type": "NSAID",
+    "category": "OTC",
     "uses": ["Pain relief", "Inflammation", "Fever", "Muscle pain"],
     "dosage": "200–400 mg every 6–8 hours",
+    "max_dose": "1200 mg/day (OTC)",
     "warnings": [
       "Take after food",
       "May cause stomach ulcers",
       "Avoid in kidney disease"
     ],
-    "side_effects": ["Acidity", "Stomach pain", "Dizziness"]
+    "side_effects": [
+      "Acidity", "Stomach pain", "Dizziness"
+    ],
+    "when_to_avoid": [
+      "Kidney disease",
+      "History of stomach ulcers"
+    ],
+    "tips": [
+      "Take with food to reduce stomach irritation"
+    ]
   },
 
   "amoxicillin": {
     "aliases": [
-      "amoxicillin",
-      "amox",
-      "amoxil",
-      "mox",
-      "amoxycillin"
+      "amoxicillin", "amox", "amoxil", "mox", "amoxycillin"
     ],
     "type": "Antibiotic",
+    "category": "Prescription",
     "uses": ["Bacterial infections", "Respiratory infections", "Ear infections"],
     "dosage": "250–500 mg every 8 hours",
     "warnings": [
@@ -57,102 +68,151 @@
       "Do not use for viral infections",
       "Allergic reactions possible"
     ],
-    "side_effects": ["Diarrhea", "Nausea", "Skin rash"]
+    "side_effects": [
+      "Diarrhea", "Nausea", "Skin rash"
+    ],
+    "when_to_avoid": [
+      "Penicillin allergy"
+    ],
+    "tips": [
+      "Stopping early can cause antibiotic resistance"
+    ]
   },
 
   "azithromycin": {
     "aliases": [
-      "azithromycin",
-      "azithro",
-      "azee",
-      "zithromax",
-      "azithromicin"
+      "azithromycin", "azithro", "azee", "zithromax", "azithromicin"
     ],
     "type": "Antibiotic",
+    "category": "Prescription",
     "uses": ["Respiratory infections", "Throat infections", "Skin infections"],
     "dosage": "500 mg once daily for 3–5 days",
     "warnings": [
       "Complete full course",
       "May affect heart rhythm"
     ],
-    "side_effects": ["Nausea", "Diarrhea"]
+    "side_effects": [
+      "Nausea", "Diarrhea"
+    ],
+    "when_to_avoid": [
+      "Heart rhythm disorders"
+    ],
+    "tips": [
+      "Take at same time daily for best effect"
+    ]
   },
 
   "cetirizine": {
     "aliases": [
-      "cetirizine",
-      "cetirizin",
-      "cetzine",
-      "zyrtec"
+      "cetirizine", "cetirizin", "cetzine", "zyrtec"
     ],
     "type": "Antihistamine",
+    "category": "OTC",
     "uses": ["Allergy", "Sneezing", "Runny nose", "Itching"],
     "dosage": "10 mg once daily",
     "warnings": [
       "May cause drowsiness",
       "Avoid alcohol"
     ],
-    "side_effects": ["Sleepiness", "Dry mouth"]
+    "side_effects": [
+      "Sleepiness", "Dry mouth"
+    ],
+    "when_to_avoid": [
+      "Driving or operating machinery"
+    ],
+    "tips": [
+      "Take at night if drowsiness occurs"
+    ]
   },
 
   "metformin": {
     "aliases": [
-      "metformin",
-      "glycomet",
-      "glucophage"
+      "metformin", "glycomet", "glucophage"
     ],
     "type": "Antidiabetic",
+    "category": "Prescription",
     "uses": ["Type 2 diabetes control"],
     "dosage": "500–1000 mg twice daily",
     "warnings": [
       "Take with meals",
       "Monitor kidney function"
     ],
-    "side_effects": ["Diarrhea", "Nausea"]
+    "side_effects": [
+      "Diarrhea", "Nausea"
+    ],
+    "when_to_avoid": [
+      "Severe kidney disease"
+    ],
+    "tips": [
+      "Start with low dose to reduce stomach issues"
+    ]
   },
 
   "pantoprazole": {
     "aliases": [
-      "pantoprazole",
-      "pantocid",
-      "pan 40"
+      "pantoprazole", "pantocid", "pan 40"
     ],
     "type": "Proton Pump Inhibitor",
+    "category": "OTC",
     "uses": ["Acidity", "GERD", "Ulcers"],
     "dosage": "40 mg once daily before food",
     "warnings": [
       "Long-term use may weaken bones"
     ],
-    "side_effects": ["Headache", "Diarrhea"]
+    "side_effects": [
+      "Headache", "Diarrhea"
+    ],
+    "when_to_avoid": [
+      "Long-term unsupervised use"
+    ],
+    "tips": [
+      "Take 30 minutes before breakfast"
+    ]
   },
 
   "diclofenac": {
     "aliases": [
-      "diclofenac",
-      "voveran",
-      "diclo"
+      "diclofenac", "voveran", "diclo"
     ],
     "type": "NSAID",
+    "category": "Prescription",
     "uses": ["Pain", "Inflammation", "Joint pain"],
     "dosage": "50 mg 2–3 times daily",
     "warnings": [
       "Take after food",
       "Avoid long-term use"
     ],
-    "side_effects": ["Acidity", "Ulcers"]
+    "side_effects": [
+      "Acidity", "Ulcers"
+    ],
+    "when_to_avoid": [
+      "Heart disease",
+      "Stomach ulcers"
+    ],
+    "tips": [
+      "Use only for short-term pain relief"
+    ]
   },
 
   "omeprazole": {
     "aliases": [
-      "omeprazole",
-      "omez"
+      "omeprazole", "omez"
     ],
     "type": "Proton Pump Inhibitor",
+    "category": "OTC",
     "uses": ["Acidity", "GERD"],
     "dosage": "20 mg once daily",
     "warnings": [
-      "Take before food"
+      "Long-term use risks vitamin deficiency"
     ],
-    "side_effects": ["Headache", "Nausea"]
+    "side_effects": [
+      "Headache", "Nausea"
+    ],
+    "when_to_avoid": [
+      "Long-term unsupervised use"
+    ],
+    "tips": [
+      "Take before meals for best effect"
+    ]
   }
 }
