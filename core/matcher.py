@@ -21,12 +21,29 @@ def detect_medicines(text: str):
     results = []
 
     for med_name in med_db.keys():
-        score = fuzz.token_set_ratio(med_name.lower(), text_lower)
-        
-        if score >= 70:
+        med_lower = med_name.lower()
+
+        # 🥇 DIRECT MATCH (MOST IMPORTANT)
+        if med_lower in text_lower:
+            results.append({
+                "name": med_name.capitalize(),
+                "confidence": 100,
+                "level": "high"
+            })
+            continue
+
+        # 🥈 FUZZY MATCH
+        score = fuzz.token_set_ratio(med_lower, text_lower)
+
+        # 🥉 PARTIAL WORD MATCH (handles broken OCR)
+        if any(part in text_lower for part in med_lower.split()):
+            score = max(score, 85)
+
+        # 🔻 LOWER THRESHOLD
+        if score >= 60:
             if score >= 90:
                 level = "high"
-            elif score >= 80:
+            elif score >= 75:
                 level = "medium"
             else:
                 level = "low"
