@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from core.ocr import extract_text
 from core.matcher import detect_medicines
 from core.loader import get_medicines, get_instructions
-from llm.explainer import generate_explanation
+from llm.explainer import generate_explanation, generate_fallback_explanation
 
 # ==============================================================================
 # PATH CONFIGURATION
@@ -100,24 +100,30 @@ async def scan_prescription(image: UploadFile = File(...)):
         # Step 3: Medicine detection
         medicines = detect_medicines(text)
 
-        # Step 4: LLM explanation
-        summary = "No medicines detected to explain."
-        if medicines:
+        # Step 4: Hybrid LLM explanation
+        summary = ""
+        
+        if not medicines:
+            # CASE 3 (NO MEDICINE)
+            summary = "No medicines detected. Please upload a clearer image."
+        else:
             med_db = get_medicines()
             instructions = get_instructions()
 
             top_med = medicines[0]
             med_name_key = top_med["name"].lower()
             
-            if not med_db.get(med_name_key):
-                summary = "Medicine data not found."
-            else:
+            if med_db.get(med_name_key):
+                # CASE 1 (FOUND)
                 summary = generate_explanation(
                     medicine_name=med_name_key,
                     medicine_info=med_db.get(med_name_key),
                     instructions=instructions,
                     confidence=top_med.get("level", "high")
                 )
+            else:
+                # CASE 2 (NOT FOUND)
+                summary = generate_fallback_explanation(medicine_name=med_name_key)
 
         # Step 5: Confidence
         confidence = "high" if medicines else "low"
