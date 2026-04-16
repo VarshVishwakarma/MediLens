@@ -1,3 +1,4 @@
+import re
 from rapidfuzz import fuzz
 from core.loader import get_medicines
 
@@ -5,36 +6,37 @@ def detect_medicines(text: str) -> list:
     if not text:
         return []
         
-    text = text.lower().strip()
+    # STEP 1 — CLEAN TEXT
+    text = text.lower()
+    text = re.sub(r'[^a-z0-9\s]', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    
     if not text:
         return []
         
+    # STEP 2 — TOKENIZE
+    words = set(text.split())
     med_db = get_medicines()
     matches = []
     
+    # STEP 3 — MULTI-LAYER MATCHING
     for med_name in med_db:
         med_lower = med_name.lower()
-        
-        med_len = len(med_lower)
-        if med_len <= 5:
-            threshold = 75
-        elif med_len <= 8:
-            threshold = 70
-        else:
-            threshold = 65
-            
         confidence = 0.0
         
         if med_lower in text:
             confidence = 100.0
         else:
-            confidence = fuzz.token_set_ratio(med_lower, text)
+            fuzzy_conf = fuzz.partial_ratio(med_lower, text)
+            has_token = any(token in words for token in med_lower.split())
             
-            parts = med_lower.split()
-            if len(parts) > 1 and any(part in text for part in parts):
-                confidence = min(100.0, confidence + 5.0)
+            if has_token:
+                confidence = max(85.0, fuzzy_conf)
+            else:
+                confidence = fuzzy_conf
                 
-        if confidence >= threshold:
+        # STEP 4 — DYNAMIC THRESHOLD
+        if confidence >= 60:
             if confidence >= 90:
                 level = "high"
             elif confidence >= 80:
@@ -48,5 +50,6 @@ def detect_medicines(text: str) -> list:
                 "level": level
             })
             
+    # STEP 5 — LIMIT RESULTS
     matches.sort(key=lambda x: x["confidence"], reverse=True)
     return matches[:3]
