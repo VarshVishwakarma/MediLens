@@ -16,10 +16,7 @@ Features • Architecture • Quick Start • Disclaimer
 
 ✨ The Vision
 
-The Problem: Medical handwriting and degraded printed prescriptions lead to confusion and potential safety risks for patients. 
-
-
-
+The Problem: Medical handwriting and degraded printed prescriptions lead to confusion and potential safety risks for patients.
 
 The Solution: MediLens AI extracts text via OCR, cross-references it against a verified local database using advanced fuzzy matching, and uses AI only to format the results—guaranteeing zero medical hallucinations.
 
@@ -72,24 +69,39 @@ graph LR
 
 📂 Project Structure
 
-📦 medilens-ai
- ┣ 📂 api               # FastAPI application & route orchestration
- ┃ ┗ 📜 main.py         
- ┣ 📂 core              # Deterministic engines
- ┃ ┣ 📜 loader.py       # In-memory database caching
- ┃ ┣ 📜 matcher.py      # Fuzzy-matching algorithm (RapidFuzz)
- ┃ ┗ 📜 ocr.py          # Vision API integration
- ┣ 📂 data              # Ground-truth repositories
- ┃ ┣ 📜 medicines.json  
- ┃ ┗ 📜 instructions.json 
- ┣ 📂 frontend          # Client interface
- ┃ ┗ 📜 index.html      # Premium Tailwind CSS dashboard
- ┣ 📂 llm               # AI formatting layer
- ┃ ┗ 📜 explainer.py    
- ┣ 📜 .env.example      # Environment variables template
- ┣ 📜 Dockerfile        # Containerization spec
- ┗ 📜 requirements.txt  # Python dependencies
+api/ — FastAPI application & route orchestration
 
+main.py
+
+core/ — Deterministic engines
+
+loader.py — In-memory database caching
+
+matcher.py — Fuzzy-matching algorithm (RapidFuzz)
+
+ocr.py — Vision API integration
+
+data/ — Ground-truth repositories
+
+medicines.json
+
+instructions.json
+
+frontend/ — Client interface
+
+index.html — Premium Tailwind CSS dashboard
+
+llm/ — AI formatting layer
+
+explainer.py
+
+Root Configuration Files
+
+.env.example — Environment variables template
+
+Dockerfile — Containerization spec
+
+requirements.txt — Python dependencies
 
 🧪 Example Output
 
