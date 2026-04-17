@@ -1,6 +1,101 @@
-<div align="center"><!-- Placeholder for a premium logo or banner --><img src="https://www.google.com/search?q=https://via.placeholder.com/800x200/0f172a/ec4899%3Ftext%3DMediLens%2BAI" alt="MediLens AI Banner" width="100%" />Title: MediLens AIAn Automated System for the Extraction and Elucidation of Prescription Medication DataMediLens AI constitutes a computational framework engineered for the extraction, identification, and subsequent elucidation of pharmacological entities from unprocessed images of medical prescriptions. Through the integration of deterministic string-matching algorithms with constrained large language model (LLM) formatting protocols, the system mitigates the discrepancy between illegible medical orthography and the requisite clarity for patient comprehension.System Capabilities • Operational Methodology • Engineering Directives • Local Installation • Limitation of Liability</div>Section I: System Capabilities and SpecificationsOptical Character Recognition (OCR): The system executes the extraction of unprocessed textual data from visual representations of prescriptions, which may exhibit substantial orthographic noise, cursive handwriting, or typographic degradation.Deterministic Pharmacological Identification: A bespoke, deterministic fuzzy-matching mechanism is deployed to ascertain the identity of medications, thereby demonstrating resilience against character transcription anomalies induced by the OCR process.Constrained Artificial Intelligence Elucidation: The Google Gemini Large Language Model is utilized exclusively in the capacity of a syntactical formatter, wherein it provides expositions of pharmacological agents derived strictly from an empirically verified, localized database.Optimized Computational Efficiency: The underlying architecture is constructed upon the FastAPI framework, incorporating a highly optimized, single-pass iterative detection loop to minimize execution latency.User Interface Architecture: The client-facing graphical interface is constructed utilizing Tailwind CSS, manifesting responsive design principles and contemporary aesthetic methodologies.Section II: Operational MethodologyThe framework operates upon a hybrid artificial intelligence pipeline. Rather than delegating all computational tasks to a singular generative model, the overarching problem is decomposed into a verifiable, sequential pipeline:[Visual Prescription Artifact] -> [OCR Processing Module] -> [Deterministic Matching Engine] -> [Pharmacological Database] -> [LLM Syntactical Formatter] -> [Client Interface]
+<div align="center">
 
-Extraction Phase: The visual artifact is transmitted to the OCR.space Application Programming Interface (API) for the derivation of unstructured text.Detection Phase: The matching module sanitizes the extracted text and applies token-centric and fuzzy-matching algorithms (via the RapidFuzz library) against a repository of verified pharmacological aliases.Retrieval Phase: In the event that a computed match surpasses the predefined confidence threshold of sixty percent (≥ 60%), verified pharmacological parameters (e.g., indications, posology, contraindications) are retrieved from the localized JSON data store.Elucidation Phase: The Gemini API is supplied solely with the retrieved, verified data points and is instructed exclusively to restructure this information into a comprehensible, structured digest.Section III: Technological InfrastructureServer-Side ArchitecturePython (Version 3.11 or subsequent iterations)FastAPI and Uvicorn (High-throughput asynchronous web frameworks)RapidFuzz (Algorithmic string matching and lexical tokenization)OCR.space API (Image-to-text transcription service)Google Generative AI - Gemini Pro (Syntactical structuring and summarization)Client-Side ArchitectureHTML5 and JavaScriptTailwind CSS (Cascading Style Sheets framework for visual layout)Phosphor Icons (Vector graphic iconography)Section IV: Repository ArchitectureThe system's codebase is categorically organized to enforce separation of concerns and modular scalability. This hierarchical structure ensures operational integrity across all GitHub rendering environments:api/ — API Routing and Orchestrationmain.py: Application entry point and routing orchestration.core/ — Deterministic Processing and Data Ingestionloader.py: Localized database ingestion and caching mechanism.matcher.py: Deterministic fuzzy-matching logic.ocr.py: OCR API integration and text normalization routines.data/ — Static Data Repositoriesmedicines.json: Ground-truth pharmacological repository.instructions.json: Formatting directives for the language model.frontend/ — Client Interfaceindex.html: Client-facing graphical interface.llm/ — Generative Artificial Intelligence Integrationexplainer.py: Language model integration and constraints.Root Configuration FilesDockerfile: Specifications for containerization..env.example: Template for environmental variables.requirements.txt: Enumeration of Python package dependencies.Section V: Principal Engineering DirectivesThe MediLens AI framework was conceptualized with safety and algorithmic determinism as paramount objectives. It is posited that artificial intelligence deployed within medical contexts must be rendered immune to generative hallucinations.Rationale for the Exclusion of Large Language Models in the Detection Phase:Large language models demonstrate a predisposition toward hallucination and may assert incorrect pharmacological identifications when presented with degraded OCR output. Through the implementation of deterministic string-matching via the RapidFuzz library, it is ensured that the system isolates exclusively those pharmacological entities currently extant within the vetted repository.The Utilization of Large Language Models Exclusively as Syntactical Formatters:Within this architecture, the Gemini API is isolated from external internet access. It is provided with a strictly constrained prompt encompassing solely the previously retrieved database parameters, with explicit instructions to perform no function other than the structural formatting of the output for improved readability.Implementation of Dynamic Confidence Thresholds:The matching engine algorithmically calibrates confidence scores utilizing a composite of direct match evaluations, alias match evaluations, and token subset analyses. This mechanism ensures that standard OCR transcription errors do not induce catastrophic failures within the computational pipeline.Section VI: Exemplar OutputInput Representation: A visually degraded digital artifact depicting a prescription that contains the following transcribed string: "take 1 paractemol daily".Computed System Output:{
+<!-- Hero Image / Banner Placeholder -->
+
+<img src="https://www.google.com/search?q=https://images.unsplash.com/photo-1576091160550-2173ff9e5ee4%3Fq%3D80%26w%3D2000%26auto%3Dformat%26fit%3Dcrop" alt="MediLens AI Banner" width="100%" height="250" style="border-radius: 12px; object-fit: cover;" />
+
+💊 MediLens AI
+
+Smart Prescription & Medication Analysis Engine
+
+Transforming illegible medical prescriptions into clear, actionable, and safe insights using deterministic matching & constrained AI.
+
+Features • Architecture • Quick Start • Disclaimer
+
+</div>
+
+✨ The Vision
+
+The Problem: Medical handwriting and degraded printed prescriptions lead to confusion and potential safety risks for patients. 
+
+
+
+
+The Solution: MediLens AI extracts text via OCR, cross-references it against a verified local database using advanced fuzzy matching, and uses AI only to format the results—guaranteeing zero medical hallucinations.
+
+🚀 Features
+
+Feature
+
+Description
+
+🔍 Resilient OCR Extraction
+
+Accurately extracts unstructured text from visual prescriptions, handling significant orthographic noise and typographic degradation.
+
+🎯 Deterministic Detection
+
+Utilizes a bespoke fuzzy-matching engine (RapidFuzz) to identify medications, completely ignoring OCR typos without guessing.
+
+🛡️ Zero-Hallucination AI
+
+Google Gemini LLM is sandboxed and used exclusively as a syntactical formatter to structure verified local data.
+
+⚡ Ultra-Low Latency
+
+Built entirely on asynchronous FastAPI with an optimized, single-pass iterative detection loop for lightning-fast responses.
+
+✨ Glassmorphism UI
+
+A sleek, fully responsive frontend engineered with Tailwind CSS, featuring interactive animations and real-time state management.
+
+🧠 Architecture
+
+MediLens AI operates on a Hybrid Artificial Intelligence Pipeline. Rather than delegating tasks to a single, unpredictable generative model, it enforces a strict, multi-step verification process:
+
+graph LR
+    A[📄 Prescription Image] -->|OCR.space API| B(🔤 Raw Text)
+    B -->|RapidFuzz Engine| C{⚙️ Deterministic Matcher}
+    
+    C -->|≥ 60% Match| D[(🗄️ Verified DB)]
+    C -->|< 60% Match| E[⚠️ AI Fallback]
+    
+    D -->|Strict Context| F(🤖 Gemini Formatter)
+    E --> F
+    
+    F -->|Structured JSON| G[💻 Glassmorphism UI]
+
+    classDef default fill:#1e293b,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef database fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    class D database;
+
+
+📂 Project Structure
+
+📦 medilens-ai
+ ┣ 📂 api               # FastAPI application & route orchestration
+ ┃ ┗ 📜 main.py         
+ ┣ 📂 core              # Deterministic engines
+ ┃ ┣ 📜 loader.py       # In-memory database caching
+ ┃ ┣ 📜 matcher.py      # Fuzzy-matching algorithm (RapidFuzz)
+ ┃ ┗ 📜 ocr.py          # Vision API integration
+ ┣ 📂 data              # Ground-truth repositories
+ ┃ ┣ 📜 medicines.json  
+ ┃ ┗ 📜 instructions.json 
+ ┣ 📂 frontend          # Client interface
+ ┃ ┗ 📜 index.html      # Premium Tailwind CSS dashboard
+ ┣ 📂 llm               # AI formatting layer
+ ┃ ┗ 📜 explainer.py    
+ ┣ 📜 .env.example      # Environment variables template
+ ┣ 📜 Dockerfile        # Containerization spec
+ ┗ 📜 requirements.txt  # Python dependencies
+
+
+🧪 Example Output
+
+Input Scan: "take 1 paractemol daily"
+
+{
   "success": true,
   "medicines": [
     {
@@ -9,30 +104,55 @@ Extraction Phase: The visual artifact is transmitted to the OCR.space Applicatio
       "level": "medium"
     }
   ],
-  "summary": "Title: Paracetamol\n\nIndications\n• Pain relief\n• Fever reduction\n\nPosology\n500mg - 1000mg administered every 4-6 hours\n\nNotice: It is imperative to consult a licensed physician prior to administration.",
-  "ocr_text": "take 1 paractemol daily"
+  "summary": "💊 Paracetamol\n\n🧾 Uses\n• Pain relief\n• Fever reduction\n\n💊 Dosage\n500mg - 1000mg administered every 4-6 hours\n\n⚠️ Always consult a doctor.",
+  "ocr_text": "take 1 paractemol daily",
+  "processing_time": 1.24
 }
 
-Section VII: Protocol for Local Installation1. Execute the cloning of the source repository:git clone [https://github.com/yourusername/medilens-ai.git](https://github.com/yourusername/medilens-ai.git)
+
+⚡ Quick Start
+
+1. Clone & Install
+
+git clone [https://github.com/yourusername/medilens-ai.git](https://github.com/yourusername/medilens-ai.git)
 cd medilens-ai
 
-2. Establish an isolated Python virtual environment:python -m venv venv
-source venv/bin/activate
+# Activate virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: `venv\Scripts\activate`
 
-3. Institute the installation of requisite dependencies:pip install -r requirements.txt
+# Install dependencies
+pip install -r requirements.txt
 
-Section VIII: Environmental ConfigurationsIt is required that a .env configuration file be provisioned within the root directory to define the requisite Application Programming Interface (API) keys:# Required for Text Extraction procedures
+
+2. Configure Environment
+
+Create a .env file in the root directory:
+
 OCR_SPACE_API_KEY=your_ocr_space_api_key_here
-
-# Required for AI Syntactical Formatting procedures
 GEMINI_API_KEY=your_google_gemini_api_key_here
 
-Section IX: Protocol for Local ExecutionInitiate the asynchronous server runtime via the following command:uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
-Subsequent to initialization, the client interface may be accessed by navigating to the designated local host address (http://localhost:8000) via a compatible web browser.Section X: Deployment SpecificationsThe framework is fully containerized, rendering it structurally prepared for deployment across cloud-based infrastructures, including but not limited to Render, Railway, or Amazon Web Services (AWS).Container Execution via Docker:# Compilation of the Docker image
+3. Launch the Engine
+
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+
+
+Navigate to http://localhost:8000 in your browser.
+
+🐳 Docker Deployment
+
+Ready for the cloud. Deploy seamlessly to Render, AWS, or GCP:
+
 docker build -t medilens-ai .
-
-# Execution of the containerized application
 docker run -p 8000:8000 --env-file .env medilens-ai
 
-Section XI: Legal Disclaimer and Limitation of LiabilityThe MediLens AI system is distributed strictly for informational and educational utility. Under no circumstances is the output of this system to be construed as a substitute for professional medical consultation, diagnostic evaluation, or therapeutic prescription. It is strongly advised that individuals seek the counsel of a licensed physician or other qualified healthcare provider if you have any questions about your health or medications! We aren't responsible if things go wrong based on the data shown here, so please double-check everything and stay safe!<div align="center"><h3>Say Hi to the Author!</h3><p><b>Varsh Vishwakarma</b></p><p>I'm super passionate about AI, Machine Learning, Deep Learning, Data Science, Cloud Computing, and building full-stack ML apps. Let's connect!</p></div>
+
+⚖️ Disclaimer
+
+MediLens AI is distributed strictly for informational and educational utility. Under no circumstances should the output of this system be construed as a substitute for professional medical consultation, diagnostic evaluation, or therapeutic prescription. Always seek the counsel of a licensed physician. The developers disclaim all liability for any adverse consequences arising from reliance upon extracted or formatted data.
+
+<div align="center">
+<p><b>Built by Varsh Vishwakarma</b></p>
+<p><i>AI • ML • DL • Data Science • Cloud • Full-Stack ML Developer</i></p>
+</div>
