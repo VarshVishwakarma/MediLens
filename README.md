@@ -61,22 +61,23 @@ Phosphor Icons (UI Icons)
 
 📦 Project Structure
 
-medilens-ai/
-├── api/
-│   └── main.py              # FastAPI application & route orchestration
-├── core/
-│   ├── loader.py            # Local database loader & cacher
-│   ├── matcher.py           # Custom fuzzy matching engine
-│   └── ocr.py               # OCR API integration & text cleaning
-├── data/
-│   ├── medicines.json       # Ground-truth medication database
-│   └── instructions.json    # Specific formatting instructions
-├── frontend/
-│   └── index.html           # Premium UI/UX dashboard
-├── llm/
-│   └── explainer.py         # Gemini API integration (Safe formatting logic)
-├── Dockerfile               # Production containerization
-└── requirements.txt         # Python dependencies
+📦 medilens-ai/
+├── 📂 api/
+│   └── 📄 main.py              # FastAPI application, endpoints & route orchestration
+├── 📂 core/
+│   ├── 📄 loader.py            # Local database loader & in-memory cacher
+│   ├── 📄 matcher.py           # Custom fuzzy matching engine (RapidFuzz logic)
+│   └── 📄 ocr.py               # OCR API integration & text normalization
+├── 📂 data/
+│   ├── 📊 medicines.json       # Ground-truth medication DB (uses, dosages, warnings)
+│   └── 📊 instructions.json    # Specific formatting instructions for the AI
+├── 📂 frontend/
+│   └── 🌐 index.html           # Premium Glassmorphism UI/UX dashboard
+├── 📂 llm/
+│   └── 🤖 explainer.py         # Gemini API integration & safe formatting logic
+├── 🐳 Dockerfile               # Production containerization setup
+├── ⚙️ .env.example             # Environment variables template
+└── 📝 requirements.txt         # Python dependencies & version locks
 
 
 🔥 Key Engineering Decisions
@@ -169,9 +170,7 @@ docker run -p 8000:8000 --env-file .env medilens-ai
 MediLens AI is for informational and educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition or prescription. The developers assume no liability for the accuracy of the extracted data.
 
 <div align="center">
-<p>🧑‍💻 Author
-
-Varsh Vishwakarma
-
-AI • ML • DL • Data Science • Cloud • Full-Stack ML Developer.</p>
+<h3>🧑‍💻 Author</h3>
+<p><b>Varsh Vishwakarma</b></p>
+<p>AI • ML • DL • Data Science • Cloud • Full-Stack ML Developer</p>
 </div>
