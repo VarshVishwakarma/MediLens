@@ -169,5 +169,8 @@ docker run -p 8000:8000 --env-file .env medilens-ai
 MediLens AI is for informational and educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition or prescription. The developers assume no liability for the accuracy of the extracted data.
 
 <div align="center">
-<p>Built with ❤️ by a Senior AI Engineer.</p>
+<p>🧑‍💻 Author
+
+Varsh Vishwakarma
+AI • ML • DL • Data Science • Cloud • Full-Stack ML Developer.</p>
 </div>
