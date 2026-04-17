@@ -48,7 +48,8 @@ def detect_medicines(text: str) -> list:
             confidence = max(confidence, fuzzy_conf)
                 
         # STEP 5 — CONFIDENCE FILTERING
-        if confidence >= 75.0:
+        # Lowered threshold to 60.0 to catch more potential matches
+        if confidence >= 60.0:
             # STEP 6 — ASSIGN LEVEL
             if confidence >= 90.0:
                 level = "high"
