@@ -126,7 +126,7 @@ Input Scan: "take 1 paractemol daily"
 
 1. Clone & Install
 
-git clone [https://github.com/yourusername/medilens-ai.git](https://github.com/yourusername/medilens-ai.git)
+git clone [https://github.com/VarshVishwakarma/Medilens.git](https://github.com/VarshVishwakarma/Medilens.git)
 cd medilens-ai
 
 # Activate virtual environment
