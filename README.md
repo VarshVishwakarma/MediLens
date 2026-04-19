@@ -2,7 +2,7 @@
 
 \<\!-- Hero Image / Banner Placeholder \--\>
 
-\<img src="assets/banner.png" alt="MediLens AI Banner" width="100%" style="border-radius: 12px; object-fit: cover;" /\>
+<img src="assets/banner.png" alt="MediLens AI Banner" width="100%" style="border-radius: 12px; object-fit: cover;" />
 
 # **💊 MediLens AI**
 
