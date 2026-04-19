@@ -1,6 +1,6 @@
-\<div align="center"\>
+<div align="center">
 
-\<\!-- Hero Image / Banner Placeholder \--\>
+<!-- Hero Image / Banner Placeholder -->
 
 <img src="assets/banner.png" alt="MediLens AI Banner" width="100%" style="border-radius: 12px; object-fit: cover;" />
 
@@ -12,7 +12,7 @@
 
 [Features](https://www.google.com/search?q=%23-features) • [Architecture](https://www.google.com/search?q=%23-architecture) • [Quick Start](https://www.google.com/search?q=%23-quick-start) • [Disclaimer](https://www.google.com/search?q=%23%EF%B8%8F-disclaimer)
 
-\</div\>
+</div>
 
 ## **✨ The Vision**
 
@@ -126,10 +126,7 @@ docker run \-p 8000:8000 \--env-file .env medilens-ai
 
 **MediLens AI is distributed strictly for informational and educational utility.** Under no circumstances should the output of this system be construed as a substitute for professional medical consultation, diagnostic evaluation, or therapeutic prescription. Always seek the counsel of a licensed physician. The developers disclaim all liability for any adverse consequences arising from reliance upon extracted or formatted data.
 
-\<div align="center"\>
-
-\<p\>\<b\>Built by Varsh Vishwakarma\</b\>\</p\>
-
-\<p\>\<i\>AI • ML • DL • Data Science • Cloud • Full-Stack ML Developer\</i\>\</p\>
-
-\</div\>
+<div align="center">
+<p><b>Built by Varsh Vishwakarma</b></p>
+<p><i>AI • ML • DL • Data Science • Cloud • Full-Stack ML Developer</i></p>
+</div>
