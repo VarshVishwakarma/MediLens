@@ -1,56 +1,4 @@
-<div align="center">
-
-<!-- Hero Image / Banner Placeholder -->
-
-<img src="https://www.google.com/search?q=https://images.unsplash.com/photo-1576091160550-2173ff9e5ee4%3Fq%3D80%26w%3D2000%26auto%3Dformat%26fit%3Dcrop" alt="MediLens AI Banner" width="100%" height="250" style="border-radius: 12px; object-fit: cover;" />
-
-💊 MediLens AI
-
-Smart Prescription & Medication Analysis Engine
-
-Transforming illegible medical prescriptions into clear, actionable, and safe insights using deterministic matching & constrained AI.
-
-Features • Architecture • Quick Start • Disclaimer
-
-</div>
-
-✨ The Vision
-
-The Problem: Medical handwriting and degraded printed prescriptions lead to confusion and potential safety risks for patients.
-
-The Solution: MediLens AI extracts text via OCR, cross-references it against a verified local database using advanced fuzzy matching, and uses AI only to format the results—guaranteeing zero medical hallucinations.
-
-🚀 Features
-
-Feature
-
-Description
-
-🔍 Resilient OCR Extraction
-
-Accurately extracts unstructured text from visual prescriptions, handling significant orthographic noise and typographic degradation.
-
-🎯 Deterministic Detection
-
-Utilizes a bespoke fuzzy-matching engine (RapidFuzz) to identify medications, completely ignoring OCR typos without guessing.
-
-🛡️ Zero-Hallucination AI
-
-Google Gemini LLM is sandboxed and used exclusively as a syntactical formatter to structure verified local data.
-
-⚡ Ultra-Low Latency
-
-Built entirely on asynchronous FastAPI with an optimized, single-pass iterative detection loop for lightning-fast responses.
-
-✨ Glassmorphism UI
-
-A sleek, fully responsive frontend engineered with Tailwind CSS, featuring interactive animations and real-time state management.
-
-🧠 Architecture
-
-MediLens AI operates on a Hybrid Artificial Intelligence Pipeline. Rather than delegating tasks to a single, unpredictable generative model, it enforces a strict, multi-step verification process:
-
-graph LR
+<div align="center"><!-- Hero Image / Banner Placeholder --><img src="assets/banner.png" alt="MediLens AI Banner" width="100%" style="border-radius: 12px; object-fit: cover;" />💊 MediLens AISmart Prescription & Medication Analysis EngineTransforming illegible medical prescriptions into clear, actionable, and safe insights using deterministic matching & constrained AI.Features • Architecture • Quick Start • Disclaimer</div>✨ The VisionThe Problem: Medical handwriting and degraded printed prescriptions lead to confusion and potential safety risks for patients.The Solution: MediLens AI extracts text via OCR, cross-references it against a verified local database using advanced fuzzy matching, and uses AI only to format the results—guaranteeing zero medical hallucinations.🚀 FeaturesFeatureDescription🔍 Resilient OCR ExtractionAccurately extracts unstructured text from visual prescriptions, handling significant orthographic noise and typographic degradation.🎯 Deterministic DetectionUtilizes a bespoke fuzzy-matching engine (RapidFuzz) to identify medications, completely ignoring OCR typos without guessing.🛡️ Zero-Hallucination AIGoogle Gemini LLM is sandboxed and used exclusively as a syntactical formatter to structure verified local data.⚡ Ultra-Low LatencyBuilt entirely on asynchronous FastAPI with an optimized, single-pass iterative detection loop for lightning-fast responses.✨ Glassmorphism UIA sleek, fully responsive frontend engineered with Tailwind CSS, featuring interactive animations and real-time state management.🧠 ArchitectureMediLens AI operates on a Hybrid Artificial Intelligence Pipeline. Rather than delegating tasks to a single, unpredictable generative model, it enforces a strict, multi-step verification process:graph LR
     A[📄 Prescription Image] -->|OCR.space API| B(🔤 Raw Text)
     B -->|RapidFuzz Engine| C{⚙️ Deterministic Matcher}
     
@@ -66,48 +14,7 @@ graph LR
     classDef database fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
     class D database;
 
-
-📂 Project Structure
-
-api/ — FastAPI application & route orchestration
-
-main.py
-
-core/ — Deterministic engines
-
-loader.py — In-memory database caching
-
-matcher.py — Fuzzy-matching algorithm (RapidFuzz)
-
-ocr.py — Vision API integration
-
-data/ — Ground-truth repositories
-
-medicines.json
-
-instructions.json
-
-frontend/ — Client interface
-
-index.html — Premium Tailwind CSS dashboard
-
-llm/ — AI formatting layer
-
-explainer.py
-
-Root Configuration Files
-
-.env.example — Environment variables template
-
-Dockerfile — Containerization spec
-
-requirements.txt — Python dependencies
-
-🧪 Example Output
-
-Input Scan: "take 1 paractemol daily"
-
-{
+📂 Project Structureapi/ — FastAPI application & route orchestrationmain.pycore/ — Deterministic enginesloader.py — In-memory database cachingmatcher.py — Fuzzy-matching algorithm (RapidFuzz)ocr.py — Vision API integrationdata/ — Ground-truth repositoriesmedicines.jsoninstructions.jsonfrontend/ — Client interfaceindex.html — Premium Tailwind CSS dashboardllm/ — AI formatting layerexplainer.pyRoot Configuration Files.env.example — Environment variables templateDockerfile — Containerization specrequirements.txt — Python dependencies🧪 Example OutputInput Scan: "take 1 paractemol daily"{
   "success": true,
   "medicines": [
     {
@@ -121,12 +28,7 @@ Input Scan: "take 1 paractemol daily"
   "processing_time": 1.24
 }
 
-
-⚡ Quick Start
-
-1. Clone & Install
-
-git clone [https://github.com/VarshVishwakarma/Medilens.git](https://github.com/VarshVishwakarma/Medilens.git)
+⚡ Quick Start1. Clone & Installgit clone [https://github.com/yourusername/medilens-ai.git](https://github.com/yourusername/medilens-ai.git)
 cd medilens-ai
 
 # Activate virtual environment
@@ -136,35 +38,12 @@ source venv/bin/activate  # Windows: `venv\Scripts\activate`
 # Install dependencies
 pip install -r requirements.txt
 
-
-2. Configure Environment
-
-Create a .env file in the root directory:
-
-OCR_SPACE_API_KEY=your_ocr_space_api_key_here
+2. Configure EnvironmentCreate a .env file in the root directory:OCR_SPACE_API_KEY=your_ocr_space_api_key_here
 GEMINI_API_KEY=your_google_gemini_api_key_here
 
+3. Launch the Engineuvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
-3. Launch the Engine
-
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-
-
-Navigate to http://localhost:8000 in your browser.
-
-🐳 Docker Deployment
-
-Ready for the cloud. Deploy seamlessly to Render, AWS, or GCP:
-
-docker build -t medilens-ai .
+Navigate to http://localhost:8000 in your browser.🐳 Docker DeploymentReady for the cloud. Deploy seamlessly to Render, AWS, or GCP:docker build -t medilens-ai .
 docker run -p 8000:8000 --env-file .env medilens-ai
 
-
-⚖️ Disclaimer
-
-MediLens AI is distributed strictly for informational and educational utility. Under no circumstances should the output of this system be construed as a substitute for professional medical consultation, diagnostic evaluation, or therapeutic prescription. Always seek the counsel of a licensed physician. The developers disclaim all liability for any adverse consequences arising from reliance upon extracted or formatted data.
-
-<div align="center">
-<p><b>Built by Varsh Vishwakarma</b></p>
-<p><i>AI • ML • DL • Data Science • Cloud • Full-Stack ML Developer</i></p>
-</div>
+⚖️ DisclaimerMediLens AI is distributed strictly for informational and educational utility. Under no circumstances should the output of this system be construed as a substitute for professional medical consultation, diagnostic evaluation, or therapeutic prescription. Always seek the counsel of a licensed physician. The developers disclaim all liability for any adverse consequences arising from reliance upon extracted or formatted data.<div align="center"><p><b>Built by Varsh Vishwakarma</b></p><p><i>AI • ML • DL • Data Science • Cloud • Full-Stack ML Developer</i></p></div>
